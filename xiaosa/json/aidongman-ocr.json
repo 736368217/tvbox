@@ -1,5 +1,5 @@
 {
-  "base": "",
-  "key": "",
-  "model": "gpt-4o-mini"
+  "base": "https://www.zen-api.top/v1",
+  "key": "sk-9H57Xs82hlWL97RDgkxD9u6Wqnh1pf0cPaZb1ZAPi8nrTDuR",
+  "model": "deepseek-v4-pro"
 }
