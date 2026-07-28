@@ -3,6 +3,7 @@ var rule = {
     title: '爱动漫',
     模板: '短视2',
     host: 'https://ani.girigirilove.com',
+    ocrConfigUrl: 'https://raw.githubusercontent.com/736368217/tvbox/123/xiaosa/json/aidongman-ocr.json',
     homeUrl: '/',
     // url:'/show/fyclass--------fypage---/'
     url: '/show/fyclassfyfilter',
@@ -847,9 +848,10 @@ var rule = {
         }
 
         function loadConfig() {
-            if (rule.params) {
+            var configUrl = rule.ocrConfigUrl || rule.params;
+            if (configUrl) {
                 try {
-                    var remote = JSON.parse(request(rule.params, {
+                    var remote = JSON.parse(request(configUrl, {
                         headers: {
                             'Cache-Control': 'no-cache'
                         }
