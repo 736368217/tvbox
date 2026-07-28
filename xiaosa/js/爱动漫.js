@@ -1,11 +1,11 @@
 muban.短视2.二级.img = '.detail-pic&&img&&data-src';
 var rule = {
-    title: '爱弹幕',
+    title: '爱动漫',
     模板: '短视2',
-    host: 'https://bgm.girigirilove.com',
-    homeUrl: '/map/',
+    host: 'https://ani.girigirilove.com',
+    homeUrl: '/',
     // url:'/show/fyclass--------fypage---/'
-    url: '/show/fyclassfyfilter/',
+    url: '/show/fyclassfyfilter',
     filterable: 1, //是否启用分类筛选,
     filter_url: '-{{fl.area}}-{{fl.by}}-{{fl.class}}-{{fl.lang}}-{{fl.letter}}---fypage---{{fl.year}}',
     filter: {
@@ -823,5 +823,245 @@ var rule = {
     推荐: '.border-box&&.public-list-box;a&&title;.lazy&&data-src;.public-list-prb&&Text;a&&href',
     double: false, // 推荐内容是否双层定位
     一级: '.border-box .public-list-box;a&&title;.lazy&&data-src;.public-list-prb&&Text;a&&href',
-    搜索: '.row-right&&.search-box;.thumb-txt&&Text;.lazy&&data-src;.public-list-prb&&Text;a&&href',
+    搜索: `js:
+        var configKey = 'aidongman_ocr_config_v1';
+        var pendingKey = 'aidongman_captcha_pending_v1';
+        var configPrefix = '爱动漫配置|';
+        var verifyPrefix = '爱动漫验证码|';
+
+        function notice(title, remark, pic) {
+            VODS = [{
+                vod_id: 'no_data',
+                vod_name: title,
+                vod_pic: pic || '',
+                vod_remarks: remark || ''
+            }];
+        }
+
+        function loadJson(key) {
+            try {
+                return JSON.parse(getItem(key, '') || '{}');
+            } catch (e) {
+                return {};
+            }
+        }
+
+        function loadConfig() {
+            if (rule.params) {
+                try {
+                    var remote = JSON.parse(request(rule.params, {
+                        headers: {
+                            'Cache-Control': 'no-cache'
+                        }
+                    }) || '{}');
+                    if (remote.base) {
+                        remote.source = 'GitHub';
+                        return remote;
+                    }
+                } catch (e) {}
+            }
+            var local = loadJson(configKey);
+            local.source = '本机';
+            return local;
+        }
+
+        function headerValue(obj, name) {
+            var target = name.toLowerCase();
+            var key = Object.keys(obj).find(function(it) {
+                return it.toLowerCase() === target;
+            });
+            return key ? obj[key] : '';
+        }
+
+        function cookieFromResponse(response) {
+            var value = headerValue(response, 'set-cookie');
+            if (Array.isArray(value)) {
+                value = value.join(';');
+            }
+            value = String(value || '');
+            var session = value.match(/PHPSESSID=[^;,]+/i);
+            return session ? session[0] : value.split(';')[0];
+        }
+
+        function captcha(cookie) {
+            var headers = {};
+            if (cookie) {
+                headers.Cookie = cookie;
+            }
+            var response = JSON.parse(request(HOST + '/verify/index.html?r=' + Date.now(), {
+                headers: headers,
+                withHeaders: true,
+                toBase64: true
+            }, true));
+            return {
+                cookie: cookie || cookieFromResponse(response),
+                image: response.body || '',
+                mime: String(headerValue(response, 'content-type') || 'image/png').split(';')[0]
+            };
+        }
+
+        function submitCaptcha(cookie, code) {
+            var response = post(HOST + '/index.php/ajax/verify_check?type=search&verify=' + encodeURIComponent(code), {
+                headers: {
+                    Cookie: cookie,
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                body: ''
+            });
+            try {
+                response = JSON.parse(response);
+                return Number(response.code) === 1 || response.msg === 'ok';
+            } catch (e) {
+                return false;
+            }
+        }
+
+        function ocrEndpoint(base) {
+            base = String(base || '').replace(/\\\/$/, '');
+            return /\\/chat\\/completions$/i.test(base) ? base : base + '/chat/completions';
+        }
+
+        function recognize(image, mime, config) {
+            var payload = {
+                model: config.model || 'gpt-4o-mini',
+                temperature: 0,
+                max_tokens: 16,
+                messages: [{
+                    role: 'user',
+                    content: [{
+                        type: 'text',
+                        text: 'Read this verification image. Return only the characters, without spaces or explanation.'
+                    }, {
+                        type: 'image_url',
+                        image_url: {
+                            url: 'data:' + mime + ';base64,' + image
+                        }
+                    }]
+                }]
+            };
+            var headers = {
+                'Content-Type': 'application/json'
+            };
+            if (config.key) {
+                headers.Authorization = 'Bearer ' + config.key;
+            }
+            var response = req(ocrEndpoint(config.base), {
+                method: 'POST',
+                headers: headers,
+                body: JSON.stringify(payload)
+            });
+            response = JSON.parse(response.content || response);
+            var content = response.choices && response.choices[0] && response.choices[0].message
+                ? response.choices[0].message.content
+                : '';
+            if (Array.isArray(content)) {
+                content = content.map(function(it) {
+                    return it.text || '';
+                }).join('');
+            }
+            var code = String(content || '').match(/[A-Za-z0-9]{4,6}/);
+            return code ? code[0] : '';
+        }
+
+        function requestWithCookie(url, cookie) {
+            var params = JSON.parse(JSON.stringify(rule_fetch_params));
+            params.headers = params.headers || {};
+            params.headers.Cookie = cookie;
+            return request(url, params);
+        }
+
+        function parseResults(html) {
+            var list = pdfa(html, '.row-right&&.search-box');
+            VODS = list.map(function(it) {
+                return {
+                    vod_name: pdfh(it, '.thumb-txt&&Text'),
+                    vod_pic: pd(it, '.lazy&&data-src', HOST),
+                    vod_remarks: pdfh(it, '.public-list-prb&&Text'),
+                    vod_id: pd(it, 'a&&href', HOST)
+                };
+            });
+        }
+
+        if (KEY === '爱动漫配置') {
+            var saved = loadConfig();
+            if (saved.base) {
+                notice('爱动漫 OCR 已配置', (saved.source || '未知来源') + ' / ' + saved.base + ' / ' + (saved.model || 'gpt-4o-mini'));
+            } else {
+                notice('爱动漫 OCR 未配置', '请在电脑上编辑 xiaosa/json/aidongman-ocr.json');
+            }
+        } else if (KEY === '爱动漫清除') {
+            setItem(configKey, '');
+            setItem(pendingKey, '');
+            notice('爱动漫配置已清除', 'API KEY 与待处理验证码已从本机删除');
+        } else if (KEY.indexOf(configPrefix) === 0) {
+            var parts = KEY.split('|');
+            if (parts.length >= 3 && /^https?:\\/\\//i.test(parts[1]) && parts[2]) {
+                setItem(configKey, JSON.stringify({
+                    base: parts[1].replace(/\\\/$/, ''),
+                    key: parts[2],
+                    model: parts[3] || 'gpt-4o-mini'
+                }));
+                notice('爱动漫 OCR 配置成功', '密钥仅保存在本机；现在可直接搜索番剧');
+            } else {
+                notice('爱动漫 OCR 配置格式错误', '搜索：爱动漫配置|API地址|API_KEY|模型名');
+            }
+        } else if (KEY.indexOf(verifyPrefix) === 0) {
+            var pending = loadJson(pendingKey);
+            var manualCode = KEY.substring(verifyPrefix.length).replace(/\\s/g, '');
+            if (!pending.cookie || !pending.url || !manualCode) {
+                notice('没有待处理的验证码', '先正常搜索一次，再输入：爱动漫验证码|图片字符');
+            } else if (submitCaptcha(pending.cookie, manualCode)) {
+                setItem(RULE_CK, pending.cookie);
+                setItem(pendingKey, '');
+                parseResults(requestWithCookie(pending.url, pending.cookie));
+            } else {
+                var renewed = captcha(pending.cookie);
+                pending.cookie = renewed.cookie;
+                pending.image = renewed.image;
+                pending.mime = renewed.mime;
+                setItem(pendingKey, JSON.stringify(pending));
+                notice('验证码错误，请重试', '搜索：爱动漫验证码|图片字符', 'data:' + renewed.mime + ';base64,' + renewed.image);
+            }
+        } else {
+            var html = request(input);
+            if (!/请输入验证码|输入验证码/.test(html)) {
+                parseResults(html);
+            } else {
+                var config = loadConfig();
+                var challenge = captcha('');
+                var verified = false;
+                if (config.base) {
+                    for (var attempt = 0; attempt < 3 && !verified; attempt++) {
+                        try {
+                            var code = recognize(challenge.image, challenge.mime, config);
+                            verified = code && submitCaptcha(challenge.cookie, code);
+                        } catch (e) {
+                            verified = false;
+                        }
+                        if (!verified && attempt < 2) {
+                            challenge = captcha(challenge.cookie);
+                        }
+                    }
+                }
+                if (verified) {
+                    setItem(RULE_CK, challenge.cookie);
+                    setItem(pendingKey, '');
+                    parseResults(requestWithCookie(input, challenge.cookie));
+                } else {
+                    setItem(pendingKey, JSON.stringify({
+                        cookie: challenge.cookie,
+                        image: challenge.image,
+                        mime: challenge.mime,
+                        url: input,
+                        keyword: KEY
+                    }));
+                    notice(
+                        config.base ? '自动识别失败，请手动输入' : '搜索需要验证码',
+                        '搜索：爱动漫验证码|图片字符',
+                        'data:' + challenge.mime + ';base64,' + challenge.image
+                    );
+                }
+            }
+        }
+    `,
 }
