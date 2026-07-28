@@ -965,6 +965,17 @@ var rule = {
             return code ? code[0] : '';
         }
 
+        function recognizeDefault(image) {
+            var response = post('https://api.nn.ci/ocr/b64/text', {
+                headers: {
+                    'Content-Type': 'text/plain'
+                },
+                body: image
+            });
+            var code = String(response || '').match(/[A-Za-z0-9]{4,6}/);
+            return code ? code[0] : '';
+        }
+
         function requestWithCookie(url, cookie) {
             var params = JSON.parse(JSON.stringify(rule_fetch_params));
             params.headers = params.headers || {};
@@ -1032,17 +1043,23 @@ var rule = {
                 var config = loadConfig();
                 var challenge = captcha('');
                 var verified = false;
-                if (config.base) {
-                    for (var attempt = 0; attempt < 3 && !verified; attempt++) {
+                for (var attempt = 0; attempt < 3 && !verified; attempt++) {
+                    try {
+                        var defaultCode = recognizeDefault(challenge.image);
+                        verified = defaultCode && submitCaptcha(challenge.cookie, defaultCode);
+                    } catch (e) {
+                        verified = false;
+                    }
+                    if (!verified && config.base) {
                         try {
                             var code = recognize(challenge.image, challenge.mime, config);
                             verified = code && submitCaptcha(challenge.cookie, code);
                         } catch (e) {
                             verified = false;
                         }
-                        if (!verified && attempt < 2) {
-                            challenge = captcha(challenge.cookie);
-                        }
+                    }
+                    if (!verified && attempt < 2) {
+                        challenge = captcha(challenge.cookie);
                     }
                 }
                 if (verified) {
@@ -1058,7 +1075,7 @@ var rule = {
                         keyword: KEY
                     }));
                     notice(
-                        config.base ? '自动识别失败，请手动输入' : '搜索需要验证码',
+                        '自动识别失败，请手动输入',
                         '搜索：爱动漫验证码|图片字符',
                         'data:' + challenge.mime + ';base64,' + challenge.image
                     );
