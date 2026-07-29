@@ -12,8 +12,10 @@ urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 class Spider:
     UA = "Mozilla/5.0 (Linux; Android 13; TVBox) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36"
+    JINA_UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36"
     AV_HOST = "https://123av.com"
     JABLE_HOST = "https://jable.tv"
+    JINA_READER = "https://r.jina.ai/"
     MISSAV_HOSTS = ("https://missav.ws", "https://missav.ai")
     HANIME_HOSTS = ("https://hanime1.best", "https://hanimeone.me", "https://hanime1.me")
 
@@ -52,18 +54,11 @@ class Spider:
         return ""
 
     def _headers(self, referer=""):
-        if referer.startswith(self.JABLE_HOST):
-            result = {
-                "User-Agent": "PostmanRuntime/7.36.3",
-                "Host": "jable.tv",
-                "Postman-Token": "33290483-3c8d-413f-a160-0d3aea9e6f95",
-            }
-        else:
-            result = {
-                "User-Agent": self.UA,
-                "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-                "Accept-Language": "zh-CN,zh;q=0.9,en;q=0.7",
-            }
+        result = {
+            "User-Agent": self.UA,
+            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+            "Accept-Language": "zh-CN,zh;q=0.9,en;q=0.7",
+        }
         if referer:
             result["Referer"] = referer
         return result
@@ -77,6 +72,24 @@ class Spider:
                 verify=False,
             )
             return response.text
+        except Exception:
+            return ""
+
+    def _get_jable(self, url, fresh=False):
+        headers = {
+            "User-Agent": self.JINA_UA,
+            "Accept": "text/plain",
+            "X-Return-Format": "html",
+        }
+        if fresh:
+            headers["X-No-Cache"] = "true"
+        try:
+            response = self.session.get(
+                self.JINA_READER + url,
+                headers=headers,
+                timeout=50,
+            )
+            return response.text if response.status_code == 200 else ""
         except Exception:
             return ""
 
@@ -314,7 +327,21 @@ class Spider:
             folder_ids = {"missav:actresses/ranking", "missav:makers", "missav:genres"}
             filters = {item["type_id"]: self._missav_filters() for item in result if item["type_id"] not in folder_ids}
             return result, filters
-        return result, {}
+        jable_filters = [{"key": "sort_by", "name": "排序", "value": [
+            {"n": "近期最佳", "v": "post_date_and_popularity"},
+            {"n": "最近更新", "v": "post_date"},
+            {"n": "最多观看", "v": "video_viewed"},
+            {"n": "最高收藏", "v": "most_favourited"},
+        ]}]
+        hot_filters = [{"key": "sort_by", "name": "时段", "value": [
+            {"n": "所有时间", "v": "video_viewed"},
+            {"n": "本月热门", "v": "video_viewed_month"},
+            {"n": "本周热门", "v": "video_viewed_week"},
+            {"n": "今日热门", "v": "video_viewed_today"},
+        ]}]
+        filters = {item["type_id"]: jable_filters for item in result if item["type_id"] != "jable:categories"}
+        filters["jable:hot"] = hot_filters
+        return result, filters
 
     def _select_hanime_host(self):
         for host in self.HANIME_HOSTS:
@@ -352,6 +379,47 @@ class Spider:
                 })
             if result:
                 break
+        return result
+
+    def _parse_jable_folders(self, content):
+        result = []
+        seen = set()
+        for block in re.split(r'class="video-img-box', content or "", flags=re.I)[1:]:
+            match = re.search(r'href=["\']https://jable\.tv/(categories/[^"\'/?#]+)/?', block, re.I)
+            if not match:
+                continue
+            path = html.unescape(match.group(1))
+            if path in seen:
+                continue
+            seen.add(path)
+            title = re.search(r'<h4[^>]*>([\s\S]*?)</h4>', block, re.I)
+            image = re.search(r'<img[^>]+src=["\']([^"\']+)', block, re.I)
+            count = re.search(r'class="absolute-center"[^>]*>[\s\S]*?<span[^>]*>([\s\S]*?)</span>', block, re.I)
+            result.append({
+                "vod_id": "jable-folder:" + path,
+                "vod_name": self._clean(title.group(1)) if title else path.rsplit("/", 1)[-1],
+                "vod_pic": html.unescape(image.group(1)) if image else "",
+                "vod_remarks": self._clean(count.group(1)) if count else "主题",
+                "vod_tag": "folder",
+                "style": {"type": "rect", "ratio": 1.0},
+            })
+        tag_pattern = re.compile(
+            r'<a[^>]+class=["\'][^"\']*\btag\b[^"\']*["\'][^>]+href=["\']https://jable\.tv/(tags/[^"\'/?#]+)/?["\'][^>]*>([\s\S]*?)</a>',
+            re.I,
+        )
+        for path, body in tag_pattern.findall(content or ""):
+            path = html.unescape(path)
+            name = self._clean(body)
+            if not name or path in seen:
+                continue
+            seen.add(path)
+            result.append({
+                "vod_id": "jable-folder:" + path,
+                "vod_name": name,
+                "vod_remarks": "标签",
+                "vod_tag": "folder",
+                "style": {"type": "rect", "ratio": 2.0},
+            })
         return result
 
     def _hanime_classes(self):
@@ -417,21 +485,14 @@ class Spider:
             return {"list": items, "page": page, "pagecount": self._page_count(content, page), "limit": 12}
         path = tid.split(":", 1)[1] if ":" in tid else tid
         if self.mode == "jable":
-            if path == "latest-updates":
-                url = (
-                    self.JABLE_HOST
-                    + "/latest-updates/?mode=async&function=get_block"
-                    + "&block_id=list_videos_latest_videos_list"
-                    + "&sort_by=post_date&from=%d" % page
-                )
-            else:
-                sort = extend.get("sort_by", "video_viewed")
-                url = (
-                    "%s/%s/%d/?mode=async&function=get_block"
-                    "&block_id=list_videos_common_videos_list&sort_by=%s"
-                    % (self.JABLE_HOST, path.strip("/"), page, quote(sort))
-                )
-            content = self._get(url, self.JABLE_HOST + "/")
+            params = {"from": str(page)}
+            if extend.get("sort_by"):
+                params["sort_by"] = extend["sort_by"]
+            url = "%s/%s/?%s" % (self.JABLE_HOST, path.strip("/"), urlencode(params))
+            content = self._get_jable(url)
+            if path == "categories":
+                items = self._parse_jable_folders(content)
+                return {"list": items, "page": 1, "pagecount": 1, "limit": len(items) or 1}
             items = self._parse_jable(content)
         else:
             params = {"page": str(page)}
@@ -508,7 +569,7 @@ class Spider:
     def _direct_detail(self, path):
         if self.mode == "jable":
             url = "%s/videos/%s/" % (self.JABLE_HOST, path.strip("/"))
-            content = self._get(url, self.JABLE_HOST + "/")
+            content = self._get_jable(url, fresh=True)
             source = re.search(r'(?:hlsUrl\s*=\s*|"hlsUrl"\s*:\s*)["\']([^"\']+)', content, re.I)
             source_name = "Jable"
         else:
@@ -524,6 +585,8 @@ class Spider:
         poster = re.search(r'<meta[^>]+property="og:image"[^>]+content="([^"]+)"', content, re.I)
         media_url = html.unescape(source.group(1) if source and source.lastindex else source.group(0) if source else "")
         variants = self._media_variants(media_url, url)
+        if self.mode == "jable" and variants and variants[0][0] == "播放":
+            variants[0] = ("1080P", variants[0][1])
         if not variants:
             variants = [("网页播放", url)]
         return {"list": [{
@@ -572,7 +635,7 @@ class Spider:
             items = self._parse_hanime(content)
         elif self.mode == "jable":
             url = "%s/search/%s/?from=%d" % (self.JABLE_HOST, quote(key, safe=""), page)
-            content = self._get(url, self.JABLE_HOST + "/")
+            content = self._get_jable(url)
             items = self._parse_jable(content)
         elif self.mode == "missav":
             content, url = self._get_missav("/cn/search/%s" % quote(key, safe=""), "?page=%d" % page)

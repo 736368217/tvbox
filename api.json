@@ -27,40 +27,11 @@
       "style": {"type": "rect", "ratio": 0.68}
     },
     {
-      "key": "v14_Jable",
+      "key": "v15_Jable",
       "name": "Jable",
       "type": 3,
-      "api": "csp_GM",
-      "jar": "https://ghfast.top/https://raw.githubusercontent.com/736368217/tvbox/456/jar/gm.jar",
-      "ext": {
-        "userScript": "https://ghfast.top/https://raw.githubusercontent.com/736368217/tvbox/456/js/jable.user.js",
-        "debug": false,
-        "webViewSettings": {
-          "blockNetworkImage": true,
-          "blockList": [
-            "*.ico*",
-            "*.png*",
-            "*.css*",
-            "https://*.adsco.re/*",
-            "https://*.googleapis.com/*",
-            "https://*.googlesyndication.com/*",
-            "https://*.googletagmanager.com/*",
-            "https://*.hpyjmp.com/*",
-            "https://*.magsrv.com/*",
-            "https://*.mnaspm.com/*",
-            "https://*.shukriya90.com/*",
-            "https://*.tapioni.com/*",
-            "https://*.tsyndicate.com/*",
-            "https://assets.jable.tv/assets/js/player.js"
-          ]
-        },
-        "spider": {
-          "homeContent": {"loadUrl": "https://jable.tv/"},
-          "categoryContent": {"loadUrl": "https://jable.tv/${tid:-latest-updates}/?from=${pg:-1}${sort_by:-}"},
-          "detailContent": {"loadUrl": "https://jable.tv/videos/${id}/"},
-          "searchContent": {"loadUrl": "https://jable.tv/search/${key}/?from=${pg:-1}"}
-        }
-      },
+      "api": "https://ghfast.top/https://raw.githubusercontent.com/736368217/tvbox/456/py/sites_v4.py",
+      "ext": "jable",
       "searchable": 1,
       "quickSearch": 1,
       "filterable": 1,
