@@ -2,13 +2,15 @@
 
 This branch is a minimal, standalone subscription containing only:
 
-- MissAV (stable catalog mirror)
+- MissAV
 - Hanime
 - Jable (stable catalog mirror)
 - 123AV
 
 Subscription file: `api.json`
 
-MissAV and Jable use the matching catalogs served by 123AV because their
-original domains currently require Cloudflare browser verification. This
-avoids empty pages in TVBox while keeping search, filters, details and playback.
+The source uses TVBox's native Python spider interface. MissAV switches between
+its official domains when one is rate-limited. Jable uses a clearly labelled
+123AV catalog mirror when Cloudflare blocks direct access. Hanime and 123AV use
+direct HTTP parsing. Available playback qualities are read from each video's
+real media playlist; 1080P appears only when the source actually provides it.
