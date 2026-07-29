@@ -31,6 +31,27 @@ class Spider:
     def getName(self):
         return self.mode
 
+    def getDependence(self):
+        return []
+
+    def destroy(self):
+        self.session.close()
+
+    def liveContent(self, url):
+        return {"list": []}
+
+    def localProxy(self, params):
+        return [404, "text/plain", "", ""]
+
+    def isVideoFormat(self, url):
+        return False
+
+    def manualVideoCheck(self):
+        return False
+
+    def getProxyUrl(self):
+        return ""
+
     def _headers(self, referer=""):
         result = {
             "User-Agent": self.UA,
