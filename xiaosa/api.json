@@ -75,11 +75,11 @@
       "key": "爱动漫",
       "name": "爱动漫 • 动漫",
       "type": 3,
-      "api": "https://gh-proxy.com/https://raw.githubusercontent.com/736368217/tvbox/123/xiaosa/js/aidongman-drpy2.min.js",
+      "api": "https://gh-proxy.com/https://raw.githubusercontent.com/736368217/tvbox/123/xiaosa/js/aidongman-drpy2.min.js?v=2",
       "searchable": 1,
       "quickSearch": 1,
       "filterable": 1,
-      "ext": "https://gh-proxy.com/https://raw.githubusercontent.com/736368217/tvbox/123/xiaosa/js/%E7%88%B1%E5%8A%A8%E6%BC%AB.js"
+      "ext": "https://gh-proxy.com/https://raw.githubusercontent.com/736368217/tvbox/123/xiaosa/js/%E7%88%B1%E5%8A%A8%E6%BC%AB.js?v=2"
     },
 {"key": "Anime1","name": "A1 • 动漫","type": 3,"api": "https://pan.vma.cc/pan/down.php/ec67b9045d393737f073d2c9365533f0.js","ext": "./js/Anime1.js"},
     {"key": "漫国动漫","name": "漫国 • 动漫","type": 3,"searchable": 1,"api": "csp_AppSy","ext": {"url": "http://114.66.27.208:806","siteKey": "rectangleadsadxa","listKey": "aassddwwxxllsx1x","parsesKey": "aassddwwxxllsx1x"}},

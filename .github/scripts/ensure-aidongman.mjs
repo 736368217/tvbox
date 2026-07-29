@@ -9,16 +9,17 @@ if (!['master', 'search'].includes(variant) || !branch) {
 }
 
 const searchBase = `https://gh-proxy.com/https://raw.githubusercontent.com/736368217/tvbox/${branch}/xiaosa`;
+const assetVersion = '2';
 const site = variant === 'search'
   ? {
       key: '爱动漫',
       name: '爱动漫 • 动漫',
       type: 3,
-      api: `${searchBase}/js/aidongman-drpy2.min.js`,
+      api: `${searchBase}/js/aidongman-drpy2.min.js?v=${assetVersion}`,
       searchable: 1,
       quickSearch: 1,
       filterable: 1,
-      ext: `${searchBase}/js/%E7%88%B1%E5%8A%A8%E6%BC%AB.js`,
+      ext: `${searchBase}/js/%E7%88%B1%E5%8A%A8%E6%BC%AB.js?v=${assetVersion}`,
     }
   : {
       key: '爱动漫',
