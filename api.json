@@ -1,7 +1,7 @@
 {
   "sites": [
     {
-      "key": "v9_MissAV",
+      "key": "v10_MissAV",
       "name": "MissAV",
       "type": 3,
       "api": "https://ghfast.top/https://raw.githubusercontent.com/736368217/tvbox/456/py/sites_v4.py",
@@ -14,7 +14,7 @@
       "style": {"type": "rect", "ratio": 1.49}
     },
     {
-      "key": "v9_Hanime",
+      "key": "v10_Hanime",
       "name": "Hanime",
       "type": 3,
       "api": "https://ghfast.top/https://raw.githubusercontent.com/736368217/tvbox/456/py/sites_v4.py",
@@ -27,7 +27,7 @@
       "style": {"type": "rect", "ratio": 0.68}
     },
     {
-      "key": "v9_Jable",
+      "key": "v10_Jable",
       "name": "Jable",
       "type": 3,
       "api": "https://ghfast.top/https://raw.githubusercontent.com/736368217/tvbox/456/py/sites_v4.py",
@@ -40,7 +40,7 @@
       "style": {"type": "rect", "ratio": 1.49}
     },
     {
-      "key": "v9_123AV",
+      "key": "v10_123AV",
       "name": "123AV",
       "type": 3,
       "api": "https://ghfast.top/https://raw.githubusercontent.com/736368217/tvbox/456/py/sites_v4.py",

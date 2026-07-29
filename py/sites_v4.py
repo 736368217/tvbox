@@ -2,7 +2,7 @@
 import html
 import json
 import re
-from urllib.parse import quote, unquote, urlencode, urljoin, urlparse
+from urllib.parse import quote, urlencode, urljoin
 
 import requests
 import urllib3
@@ -15,7 +15,7 @@ class Spider:
     AV_HOST = "https://123av.com"
     JABLE_HOST = "https://jable.tv"
     MISSAV_HOSTS = ("https://missav.ws", "https://missav.ai")
-    HANIME_HOSTS = ("https://hanimeone.me", "https://hanime1.me")
+    HANIME_HOSTS = ("https://hanime1.best", "https://hanimeone.me", "https://hanime1.me")
 
     def init(self, extend=""):
         try:
@@ -25,7 +25,6 @@ class Spider:
             self.mode = str(extend or "123av")
         self.hanime_host = self.HANIME_HOSTS[0]
         self.missav_host = self.MISSAV_HOSTS[0]
-        self.direct_available = None
         self.session = requests.Session()
 
     def getName(self):
@@ -180,13 +179,6 @@ class Spider:
             })
         return result
 
-    def _av_mirror_folders(self, root):
-        content = self._get("%s/en/%s" % (self.AV_HOST, root), self.AV_HOST + "/en/")
-        items = self._parse_av_folders(content, root)
-        for item in items:
-            item["vod_id"] = "mirror-folder:" + item["vod_id"]
-        return items
-
     @staticmethod
     def _filters():
         years = [{"n": "全部", "v": ""}] + [
@@ -218,17 +210,6 @@ class Spider:
         filters = {key: self._filters() for key, _ in classes[:7]}
         return result, filters
 
-    def _mirror_classes(self, source):
-        classes = [
-            ("m:new", "最新发行"), ("m:recent", "最近更新"), ("m:hot", "热门影片"),
-            ("m:today", "今日热门"), ("m:week", "本周热门"), ("m:month", "本月热门"),
-            ("m:censored", "有码"), ("m:uncensored", "无码"),
-            ("m:uncensored-leaked", "无码流出"),
-        ]
-        result = [{"type_id": "%s:%s" % (source, key), "type_name": name} for key, name in classes]
-        filters = {item["type_id"]: self._filters() for item in result}
-        return result, filters
-
     def _av_url(self, tid, pg, extend=None):
         extend = extend or {}
         params = {"page": str(pg)}
@@ -236,40 +217,6 @@ class Spider:
             if extend.get(key):
                 params[key] = extend[key]
         return "%s/en/%s?%s" % (self.AV_HOST, tid, urlencode(params))
-
-    def _mirror_url(self, source, tid, pg, extend=None):
-        key = tid.split(":")[-1]
-        params = {"page": str(pg)}
-        route = source
-        if key in ("new", "recent", "hot", "today", "week", "month"):
-            params["sort"] = "release_date" if key == "new" else key
-        elif key in ("censored", "uncensored", "uncensored-leaked"):
-            params["type"] = key
-        for name in ("type", "year", "sort"):
-            if (extend or {}).get(name):
-                params[name] = extend[name]
-        return "%s/en/%s?%s" % (self.AV_HOST, route, urlencode(params))
-
-    def _missav_mirror(self, path, page):
-        key = unquote(path.rstrip("/").split("/")[-1])
-        queries = {
-            "madou": "麻豆",
-            "chinese-subtitle": "中文字幕",
-            "uncensored-leak": "uncensored leak",
-            "new": "",
-        }
-        keyword = queries.get(key, key)
-        if keyword:
-            url = "%s/en/search?keyword=%s&page=%d" % (self.AV_HOST, quote(keyword), page)
-        else:
-            url = "%s/en/missav?page=%d&sort=release_date" % (self.AV_HOST, page)
-        content = self._get(url, self.AV_HOST + "/en/missav")
-        return {
-            "list": self._parse_av_cards(content, "mirror-video:"),
-            "page": page,
-            "pagecount": self._page_count(content, page),
-            "limit": 12,
-        }
 
     def _parse_jable(self, content):
         result = []
@@ -352,19 +299,6 @@ class Spider:
             ]},
         ]
 
-    def _direct_status(self):
-        if self.direct_available is not None:
-            return self.direct_available
-        if self.mode == "jable":
-            content = self._get(self.JABLE_HOST + "/latest-updates/", self.JABLE_HOST + "/")
-            self.direct_available = bool(self._parse_jable(content))
-        elif self.mode == "missav":
-            content, _ = self._get_missav("/cn/new")
-            self.direct_available = bool(self._parse_missav(content))
-        else:
-            self.direct_available = False
-        return self.direct_available
-
     def _direct_classes(self):
         if self.mode == "jable":
             classes = [
@@ -398,23 +332,31 @@ class Spider:
     def _parse_hanime(self, content):
         result = []
         seen = set()
-        pattern = re.compile(
-            r'<a[^>]+href=["\'][^"\']*watch\?v=(\d+)[^"\']*["\'][^>]*>([\s\S]*?)</a>',
-            re.I,
+        patterns = (
+            re.compile(
+                r'class="video-item-container".*?href="[^"]*v=(\d+)".*?src="([^"]+)".*?class="duration">(.*?)<.*?class="title">(.*?)<',
+                re.I | re.S,
+            ),
+            re.compile(
+                r'href="[^"]*watch\?v=(\d+)".*?src="([^"]+)".*?class="home-rows-videos-title"[^>]*>(.*?)</div>',
+                re.I | re.S,
+            ),
         )
-        for video_id, block in pattern.findall(content or ""):
-            title = re.search(r'class="(?:title|home-rows-videos-title)"[^>]*>([\s\S]*?)</', block, re.I)
-            image = re.search(r'<img[^>]+src="([^"]+)"', block, re.I)
-            duration = re.search(r'class="(?:duration|home-rows-videos-duration)"[^>]*>([\s\S]*?)</', block, re.I)
-            if not title or not image or video_id in seen:
-                continue
-            seen.add(video_id)
-            result.append({
-                "vod_id": "hanime-video:" + video_id,
-                "vod_name": self._clean(title.group(1)),
-                "vod_pic": html.unescape(image.group(1)),
-                "vod_remarks": self._clean(duration.group(1)) if duration else "",
-            })
+        for index, pattern in enumerate(patterns):
+            for match in pattern.findall(content or ""):
+                video_id, image = match[0], match[1]
+                duration, title = (match[2], match[3]) if index == 0 else ("", match[2])
+                if video_id in seen:
+                    continue
+                seen.add(video_id)
+                result.append({
+                    "vod_id": "hanime-video:" + video_id,
+                    "vod_name": self._clean(title),
+                    "vod_pic": html.unescape(image),
+                    "vod_remarks": self._clean(duration),
+                })
+            if result:
+                break
         return result
 
     def _hanime_classes(self):
@@ -442,10 +384,7 @@ class Spider:
         if self.mode == "123av":
             classes, filters = self._av_classes()
             return {"class": classes, "filters": filters}
-        if self._direct_status():
-            classes, filters = self._direct_classes()
-            return {"class": classes, "filters": filters}
-        classes, filters = self._mirror_classes(self.mode)
+        classes, filters = self._direct_classes()
         return {"class": classes, "filters": filters}
 
     def homeVideoContent(self):
@@ -453,8 +392,7 @@ class Spider:
             return self.categoryContent("latest_rank", "1", False, {})
         if self.mode == "123av":
             return self.categoryContent("all", "1", False, {})
-        prefix = self.mode + ":"
-        tid = prefix + ("latest-updates" if self.mode == "jable" else "new") if self._direct_status() else prefix + "m:new"
+        tid = self.mode + (":latest-updates" if self.mode == "jable" else ":new")
         return self.categoryContent(tid, "1", False, {})
 
     def categoryContent(self, tid, pg, filter, extend):
@@ -482,16 +420,6 @@ class Spider:
                 return {"list": items, "page": 1, "pagecount": 1, "limit": len(items) or 1}
             items = self._parse_av_cards(content)
             return {"list": items, "page": page, "pagecount": self._page_count(content, page), "limit": 12}
-        if tid.startswith("mirror-folder:"):
-            route = tid.split(":", 1)[1]
-            content = self._get(self._av_url(route, page, extend), self.AV_HOST + "/en/")
-            items = self._parse_av_cards(content, "mirror-video:")
-            return {"list": items, "page": page, "pagecount": self._page_count(content, page), "limit": 12}
-        if tid.startswith("%s:m:" % self.mode):
-            url = self._mirror_url(self.mode, tid, page, extend)
-            content = self._get(url, self.AV_HOST + "/en/%s" % self.mode)
-            items = self._parse_av_cards(content, "mirror-video:")
-            return {"list": items, "page": page, "pagecount": self._page_count(content, page), "limit": 12}
         path = tid.split(":", 1)[1] if ":" in tid else tid
         if self.mode == "jable":
             url = "%s/%s/%s" % (self.JABLE_HOST, path.strip("/"), "" if page == 1 else str(page) + "/")
@@ -510,17 +438,9 @@ class Spider:
             if path in ("actresses/ranking", "makers", "genres"):
                 roots = ("actresses",) if path == "actresses/ranking" else (path,)
                 items = self._parse_missav_folders(content, roots)
-                if not items:
-                    root = "actresses" if path == "actresses/ranking" else path
-                    items = self._av_mirror_folders(root)
                 return {"list": items, "page": page, "pagecount": self._page_count(content, page), "limit": len(items) or 1}
             else:
                 items = self._parse_missav(content)
-            if not items:
-                return self._missav_mirror(path, page)
-        if not items and self.mode == "jable":
-            fallback = "%s:m:new" % self.mode
-            return self.categoryContent(fallback, str(page), filter, extend)
         return {"list": items, "page": page, "pagecount": self._page_count(content, page), "limit": 24}
 
     def _media_variants(self, media_url, referer):
@@ -633,11 +553,10 @@ class Spider:
             }]}
         if vod_id.startswith("jable-video:") or vod_id.startswith("missav-video:"):
             return self._direct_detail(vod_id.split(":", 1)[1])
-        if vod_id.startswith("mirror-video:"):
-            label = "MissAV镜像" if self.mode == "missav" else "Jable镜像"
-            return self._av_detail(vod_id.split(":", 1)[1], label)
-        slug = vod_id.split(":", 1)[1] if ":" in vod_id else vod_id
-        return self._av_detail(slug, "123AV")
+        if self.mode == "123av":
+            slug = vod_id.split(":", 1)[1] if ":" in vod_id else vod_id
+            return self._av_detail(slug, "123AV")
+        return {"list": []}
 
     def searchContent(self, key, quick, pg="1", extend=None):
         page = int(pg or 1)
@@ -645,24 +564,23 @@ class Spider:
             url = "%s/search?query=%s&page=%d" % (self.hanime_host, quote(key), page)
             content = self._get(url, self.hanime_host + "/")
             items = self._parse_hanime(content)
-        elif self.mode == "jable" and self._direct_status():
+        elif self.mode == "jable":
             url = "%s/search/%s/?from=%d" % (self.JABLE_HOST, quote(key, safe=""), page)
             content = self._get(url, self.JABLE_HOST + "/")
             items = self._parse_jable(content)
-        elif self.mode == "missav" and self._direct_status():
+        elif self.mode == "missav":
             content, url = self._get_missav("/cn/search/%s" % quote(key, safe=""), "?page=%d" % page)
             items = self._parse_missav(content)
         else:
             url = "%s/en/search?keyword=%s&page=%d" % (self.AV_HOST, quote(key), page)
             content = self._get(url, self.AV_HOST + "/en/")
-            prefix = "video:" if self.mode == "123av" else "mirror-video:"
-            items = self._parse_av_cards(content, prefix)
+            items = self._parse_av_cards(content)
         return {"list": items, "page": page, "pagecount": self._page_count(content, page)}
 
     def playerContent(self, flag, vod_id, vipFlags):
         if vod_id.startswith("http") and not re.search(r"\.(?:m3u8|mp4)(?:[?#]|$)", vod_id, re.I):
             return {"parse": 1, "jx": 0, "url": vod_id}
-        if flag == "123AV" or "镜像" in flag:
+        if flag == "123AV":
             referer = "https://javplayer.cc/"
         elif self.mode == "hanime":
             referer = self.hanime_host + "/"
