@@ -243,7 +243,7 @@ class Spider:
             result.append({
                 "vod_id": "jable-video:" + slug,
                 "vod_name": self._clean(title.group(1)) if title else slug.upper(),
-                "vod_pic": html.unescape(image.group(1)) if image else "",
+                "vod_pic": (html.unescape(image.group(1)) + "@Referer=https://jable.tv/") if image else "",
                 "vod_remarks": self._clean(duration.group(1)) if duration else "",
             })
         return result
@@ -400,7 +400,7 @@ class Spider:
             result.append({
                 "vod_id": "jable-folder:" + path,
                 "vod_name": self._clean(title.group(1)) if title else path.rsplit("/", 1)[-1],
-                "vod_pic": html.unescape(image.group(1)) if image else "",
+                "vod_pic": (html.unescape(image.group(1)) + "@Referer=https://jable.tv/") if image else "",
                 "vod_remarks": self._clean(count.group(1)) if count else "主题",
                 "vod_tag": "folder",
                 "style": {"type": "rect", "ratio": 1.0},
