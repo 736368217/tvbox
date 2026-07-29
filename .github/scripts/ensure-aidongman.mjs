@@ -8,8 +8,8 @@ if (!['master', 'search'].includes(variant) || !branch) {
   throw new Error('Usage: node ensure-aidongman.mjs <master|search> <branch>');
 }
 
-const searchBase = `https://gh-proxy.com/https://raw.githubusercontent.com/736368217/tvbox/${branch}/xiaosa`;
-const assetVersion = '2';
+const searchBase = `https://ghfast.top/https://raw.githubusercontent.com/736368217/tvbox/${branch}/xiaosa`;
+const assetVersion = '3';
 const site = variant === 'search'
   ? {
       key: '爱动漫',

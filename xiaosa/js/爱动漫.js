@@ -3,7 +3,7 @@ var rule = {
     title: '爱动漫',
     模板: '短视2',
     host: 'https://ani.girigirilove.com',
-    ocrConfigUrl: 'https://gh-proxy.com/https://raw.githubusercontent.com/736368217/tvbox/123/xiaosa/json/aidongman-ocr.json',
+    ocrConfigUrl: 'https://ghfast.top/https://raw.githubusercontent.com/736368217/tvbox/123/xiaosa/json/aidongman-ocr.json?v=3',
     homeUrl: '/show/2--------1---/',
     // url:'/show/fyclass--------fypage---/'
     url: '/show/fyclassfyfilter',
@@ -821,7 +821,7 @@ var rule = {
             }
         }
     `,
-    推荐: '.border-box&&.public-list-box;a&&title;.lazy&&data-src;.public-list-prb&&Text;a&&href',
+    推荐: '.border-box .public-list-box;a&&title;.lazy&&data-src;.public-list-prb&&Text;a&&href',
     double: false, // 推荐内容是否双层定位
     一级: '.border-box .public-list-box;a&&title;.lazy&&data-src;.public-list-prb&&Text;a&&href',
     搜索: `js:
