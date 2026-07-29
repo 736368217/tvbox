@@ -1,0 +1,148 @@
+{
+  "spider": "./pg.jar",
+  "sites": [
+    {
+      "key": "MissAV",
+      "name": "MissAV",
+      "type": 3,
+      "api": "csp_GM",
+      "jar": "./jar/gm.jar",
+      "searchable": 1,
+      "quickSearch": 1,
+      "filterable": 1,
+      "changeable": 0,
+      "timeout": 60,
+      "style": {"type": "rect", "ratio": 1.49},
+      "ext": {
+        "userScript": "./js/av123.user.js",
+        "playUrlMatch": [
+          "https://*/v.m3u8",
+          "https://*/video.m3u8*",
+          "https://cache-*.wowstream.cloud/*/*/video.m3u8*"
+        ],
+        "webViewSettings": {
+          "blockNetworkImage": false,
+          "blockList": [
+            "https://*.googletagmanager.com/*",
+            "https://*.google-analytics.com/*",
+            "https://*.recombee.com/*"
+          ]
+        },
+        "spider": {
+          "homeContent": {"loadUrl": "https://123av.com/en/missav"},
+          "categoryContent": {"loadUrl": "https://123av.com/en/${tid}?page=${pg:-1}${type:-}${year:-}${actress:-}${sort:-}"},
+          "detailContent": {"loadUrl": "https://123av.com/en/v/${id}"},
+          "playerContent": {"loadUrl": "https://123av.com/en/v/${vod_id}"},
+          "searchContent": {"loadUrl": "https://123av.com/en/search?keyword=${key}&page=${pg:-1}"}
+        }
+      }
+    },
+    {
+      "key": "Hanime",
+      "name": "Hanime",
+      "type": 3,
+      "api": "csp_GM",
+      "jar": "./jar/gm.jar",
+      "searchable": 1,
+      "quickSearch": 1,
+      "filterable": 1,
+      "changeable": 0,
+      "timeout": 60,
+      "style": {"type": "rect", "ratio": 0.68},
+      "ext": {
+        "userScript": "./js/hanime.user.js",
+        "webViewSettings": {
+          "blockNetworkImage": false,
+          "blockList": [
+            "https://*.googletagmanager.com/*",
+            "https://*.google-analytics.com/*",
+            "https://poweredby.jads.co/*",
+            "https://*.juicyads.com/*",
+            "https://*.exosrv.com/*"
+          ]
+        },
+        "spider": {
+          "homeContent": {"loadUrl": "https://hanimeone.me/"},
+          "categoryContent": {"loadUrl": "https://hanimeone.me/search?genre=${tid}&page=${pg:-1}${sort:-}"},
+          "detailContent": {"loadUrl": "https://hanimeone.me/watch?v=${id}"},
+          "searchContent": {"loadUrl": "https://hanimeone.me/search?query=${key}&page=${pg:-1}"}
+        }
+      }
+    },
+    {
+      "key": "Jable",
+      "name": "Jable",
+      "type": 3,
+      "api": "csp_GM",
+      "jar": "./jar/gm.jar",
+      "searchable": 1,
+      "quickSearch": 1,
+      "filterable": 1,
+      "changeable": 0,
+      "timeout": 60,
+      "style": {"type": "rect", "ratio": 1.49},
+      "ext": {
+        "userScript": "./js/av123.user.js",
+        "playUrlMatch": [
+          "https://*/v.m3u8",
+          "https://*/video.m3u8*",
+          "https://cache-*.wowstream.cloud/*/*/video.m3u8*"
+        ],
+        "webViewSettings": {
+          "blockNetworkImage": false,
+          "blockList": [
+            "https://*.googletagmanager.com/*",
+            "https://*.google-analytics.com/*",
+            "https://*.recombee.com/*"
+          ]
+        },
+        "spider": {
+          "homeContent": {"loadUrl": "https://123av.com/en/jable"},
+          "categoryContent": {"loadUrl": "https://123av.com/en/${tid}?page=${pg:-1}${type:-}${year:-}${actress:-}${sort:-}"},
+          "detailContent": {"loadUrl": "https://123av.com/en/v/${id}"},
+          "playerContent": {"loadUrl": "https://123av.com/en/v/${vod_id}"},
+          "searchContent": {"loadUrl": "https://123av.com/en/search?keyword=${key}&page=${pg:-1}"}
+        }
+      }
+    },
+    {
+      "key": "123AV",
+      "name": "123AV",
+      "type": 3,
+      "api": "csp_GM",
+      "jar": "./jar/gm.jar",
+      "searchable": 1,
+      "quickSearch": 1,
+      "filterable": 1,
+      "changeable": 0,
+      "timeout": 60,
+      "style": {"type": "rect", "ratio": 1.49},
+      "ext": {
+        "userScript": "./js/av123.user.js",
+        "playUrlMatch": [
+          "https://*/v.m3u8",
+          "https://*/video.m3u8*",
+          "https://cache-*.wowstream.cloud/*/*/video.m3u8*"
+        ],
+        "webViewSettings": {
+          "blockNetworkImage": false,
+          "blockList": [
+            "https://*.googletagmanager.com/*",
+            "https://*.google-analytics.com/*",
+            "https://*.recombee.com/*"
+          ]
+        },
+        "spider": {
+          "homeContent": {"loadUrl": "https://123av.com/en/all"},
+          "categoryContent": {"loadUrl": "https://123av.com/en/${tid}?page=${pg:-1}${type:-}${year:-}${actress:-}${sort:-}"},
+          "detailContent": {"loadUrl": "https://123av.com/en/v/${id}"},
+          "playerContent": {"loadUrl": "https://123av.com/en/v/${vod_id}"},
+          "searchContent": {"loadUrl": "https://123av.com/en/search?keyword=${key}&page=${pg:-1}"}
+        }
+      }
+    }
+  ],
+  "lives": [],
+  "parses": [],
+  "flags": []
+}
