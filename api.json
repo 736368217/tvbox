@@ -1,5 +1,4 @@
 {
-  "spider": "./pg.jar",
   "sites": [
     {
       "key": "MissAV",
@@ -29,8 +28,9 @@
           ]
         },
         "spider": {
-          "homeContent": {"loadUrl": "https://123av.com/en/missav"},
-          "categoryContent": {"loadUrl": "https://123av.com/en/${tid}?page=${pg:-1}${type:-}${year:-}${actress:-}${sort:-}"},
+          "homeContent": {"loadUrl": "https://123av.com/en/missav?sort=release_date"},
+          "homeVideoContent": {"loadUrl": "https://123av.com/en/missav?sort=release_date"},
+          "categoryContent": {"loadUrl": "https://123av.com/en/${tid}&page=${pg:-1}${type:-}${year:-}${actress:-}${sort:-}"},
           "detailContent": {"loadUrl": "https://123av.com/en/v/${id}"},
           "playerContent": {"loadUrl": "https://123av.com/en/v/${vod_id}"},
           "searchContent": {"loadUrl": "https://123av.com/en/search?keyword=${key}&page=${pg:-1}"}
@@ -62,9 +62,11 @@
           ]
         },
         "spider": {
-          "homeContent": {"loadUrl": "https://hanimeone.me/"},
+          "homeContent": {"loadUrl": "https://hanimeone.me/search?sort=%E6%9C%80%E6%96%B0%E4%B8%8A%E5%B8%82&page=1"},
+          "homeVideoContent": {"loadUrl": "https://hanimeone.me/search?sort=%E6%9C%80%E6%96%B0%E4%B8%8A%E5%B8%82&page=1"},
           "categoryContent": {"loadUrl": "https://hanimeone.me/search?genre=${tid}&page=${pg:-1}${sort:-}"},
           "detailContent": {"loadUrl": "https://hanimeone.me/watch?v=${id}"},
+          "playerContent": {"loadUrl": "https://hanimeone.me/watch?v=${vod_id}"},
           "searchContent": {"loadUrl": "https://hanimeone.me/search?query=${key}&page=${pg:-1}"}
         }
       }
@@ -97,8 +99,9 @@
           ]
         },
         "spider": {
-          "homeContent": {"loadUrl": "https://123av.com/en/jable"},
-          "categoryContent": {"loadUrl": "https://123av.com/en/${tid}?page=${pg:-1}${type:-}${year:-}${actress:-}${sort:-}"},
+          "homeContent": {"loadUrl": "https://123av.com/en/jable?sort=recent"},
+          "homeVideoContent": {"loadUrl": "https://123av.com/en/jable?sort=recent"},
+          "categoryContent": {"loadUrl": "https://123av.com/en/${tid}&page=${pg:-1}${type:-}${year:-}${actress:-}${sort:-}"},
           "detailContent": {"loadUrl": "https://123av.com/en/v/${id}"},
           "playerContent": {"loadUrl": "https://123av.com/en/v/${vod_id}"},
           "searchContent": {"loadUrl": "https://123av.com/en/search?keyword=${key}&page=${pg:-1}"}
@@ -133,8 +136,9 @@
           ]
         },
         "spider": {
-          "homeContent": {"loadUrl": "https://123av.com/en/all"},
-          "categoryContent": {"loadUrl": "https://123av.com/en/${tid}?page=${pg:-1}${type:-}${year:-}${actress:-}${sort:-}"},
+          "homeContent": {"loadUrl": "https://123av.com/en/all?sort=release_date"},
+          "homeVideoContent": {"loadUrl": "https://123av.com/en/all?sort=release_date"},
+          "categoryContent": {"loadUrl": "https://123av.com/en/${tid}&page=${pg:-1}${type:-}${year:-}${actress:-}${sort:-}"},
           "detailContent": {"loadUrl": "https://123av.com/en/v/${id}"},
           "playerContent": {"loadUrl": "https://123av.com/en/v/${vod_id}"},
           "searchContent": {"loadUrl": "https://123av.com/en/search?keyword=${key}&page=${pg:-1}"}

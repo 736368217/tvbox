@@ -96,16 +96,44 @@
 
     function classesForPage() {
         const path = location.pathname;
-        if (path.endsWith("/missav")) return [{type_id: "missav", type_name: "MissAV片库"}];
-        if (path.endsWith("/jable")) return [{type_id: "jable", type_name: "Jable片库"}];
+        if (path.endsWith("/missav")) return [
+            {type_id: "missav?sort=release_date", type_name: "最新发行"},
+            {type_id: "missav?sort=recent", type_name: "最近更新"},
+            {type_id: "missav?sort=hot", type_name: "热门影片"},
+            {type_id: "missav?sort=today", type_name: "今日热门"},
+            {type_id: "missav?sort=week", type_name: "本周热门"},
+            {type_id: "missav?sort=month", type_name: "本月热门"},
+            {type_id: "missav?sort=views", type_name: "最多观看"},
+            {type_id: "missav?sort=follows", type_name: "最多收藏"},
+            {type_id: "missav?type=censored", type_name: "有码"},
+            {type_id: "missav?type=uncensored", type_name: "无码"},
+            {type_id: "missav?type=uncensored-leaked", type_name: "无码流出"}
+        ];
+        if (path.endsWith("/jable")) return [
+            {type_id: "jable?sort=recent", type_name: "最近更新"},
+            {type_id: "jable?sort=release_date", type_name: "最新发行"},
+            {type_id: "jable?sort=hot", type_name: "热门影片"},
+            {type_id: "jable?sort=today", type_name: "今日热门"},
+            {type_id: "jable?sort=week", type_name: "本周热门"},
+            {type_id: "jable?sort=month", type_name: "本月热门"},
+            {type_id: "jable?sort=views", type_name: "最多观看"},
+            {type_id: "jable?sort=follows", type_name: "最多收藏"},
+            {type_id: "jable?type=censored", type_name: "有码"},
+            {type_id: "jable?type=uncensored", type_name: "无码"},
+            {type_id: "jable?type=uncensored-leaked", type_name: "无码流出"}
+        ];
         return [
-            {type_id: "all", type_name: "全部影片"},
-            {type_id: "new", type_name: "最新发布"},
-            {type_id: "hot", type_name: "热门影片"},
-            {type_id: "recent", type_name: "最近添加"},
-            {type_id: "censored", type_name: "有码"},
-            {type_id: "uncensored", type_name: "无码"},
-            {type_id: "uncensored-leaked", type_name: "无码流出"}
+            {type_id: "all?sort=release_date", type_name: "最新发行"},
+            {type_id: "all?sort=recent", type_name: "最近更新"},
+            {type_id: "all?sort=hot", type_name: "热门影片"},
+            {type_id: "all?sort=today", type_name: "今日热门"},
+            {type_id: "all?sort=week", type_name: "本周热门"},
+            {type_id: "all?sort=month", type_name: "本月热门"},
+            {type_id: "all?sort=views", type_name: "最多观看"},
+            {type_id: "all?sort=follows", type_name: "最多收藏"},
+            {type_id: "censored?sort=release_date", type_name: "有码"},
+            {type_id: "uncensored?sort=release_date", type_name: "无码"},
+            {type_id: "uncensored-leaked?sort=release_date", type_name: "无码流出"}
         ];
     }
 
@@ -115,6 +143,9 @@
             const filters = {};
             classes.forEach((item) => { filters[item.type_id] = fullFilters; });
             return {class: classes, filters: filters, list: parseCards()};
+        },
+        homeVideoContent: function () {
+            return {list: parseCards()};
         },
         categoryContent: function (_tid, pg) {
             return {list: parseCards(), page: Number(pg) || 1, pagecount: pageCount(), limit: 12};

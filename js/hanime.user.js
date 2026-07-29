@@ -70,6 +70,9 @@
             classes.forEach((item) => { filters[item.type_id] = sort; });
             return {class: classes, filters: filters, list: parseVideos()};
         },
+        homeVideoContent: function () {
+            return {list: parseVideos()};
+        },
         categoryContent: function (_tid, pg) {
             return {list: parseVideos(), page: Number(pg) || 1, pagecount: pageCount(), limit: 40};
         },
