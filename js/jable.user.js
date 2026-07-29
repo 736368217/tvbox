@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Jable
 // @namespace    gmspider
-// @version      2024.12.03
+// @version      2026.07.29
 // @description  Jable GMSpider
 // @author       Luomo
 // @match        https://jable.tv/*
@@ -221,17 +221,53 @@ console.log(JSON.stringify(GM_info));
         };
     })();
     $(document).ready(function () {
-        let result = "";
-        if ($("#cf-wrapper").length > 0) {
-            console.log("源站不可用:" + $('title').text());
-            GM_toastLong("源站不可用:" + $('title').text());
-        } else {
-            result = GmSpider[GMSpiderArgs.fName](...GMSpiderArgs.fArgs);
+        const startedAt = Date.now();
+
+        function isChallengePage() {
+            const title = $("title").text().toLowerCase();
+            return title.includes("just a moment")
+                || title.includes("attention required")
+                || $("#cf-wrapper, #challenge-running, .cf-turnstile").length > 0;
         }
-        console.log(result);
-        if (typeof GmSpiderInject !== 'undefined') {
-            GmSpiderInject.SetSpiderResult(JSON.stringify(result));
+
+        function isTargetPageReady() {
+            switch (GMSpiderArgs.fName) {
+                case "homeContent":
+                    return $("[id^='list_videos_'], .video-img-box").length > 0;
+                case "categoryContent":
+                    if (GMSpiderArgs.fArgs[0] === "categories") {
+                        return $("#list_categories_video_categories_list, .app-nav").length > 0;
+                    }
+                    return $("[id^='list_videos_']").length > 0;
+                case "detailContent":
+                    return $(".video-info, #player").length > 0;
+                case "searchContent":
+                    return $("[id^='list_videos_']").length > 0;
+                default:
+                    return document.readyState === "complete";
+            }
         }
+
+        function returnResult() {
+            const result = GmSpider[GMSpiderArgs.fName](...GMSpiderArgs.fArgs);
+            console.log(result);
+            if (typeof GmSpiderInject !== 'undefined') {
+                GmSpiderInject.SetSpiderResult(JSON.stringify(result));
+            }
+        }
+
+        function waitForPage() {
+            if (!isChallengePage() && isTargetPageReady()) {
+                returnResult();
+                return;
+            }
+            if (Date.now() - startedAt >= 50000) {
+                returnResult();
+                return;
+            }
+            setTimeout(waitForPage, 750);
+        }
+
+        waitForPage();
     });
 })();
-
