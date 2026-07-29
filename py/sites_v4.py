@@ -236,7 +236,9 @@ class Spider:
             slug = match.group(1)
             seen.add(slug)
             title = re.search(r'class="title"[^>]*>([\s\S]*?)</', block, re.I)
-            image = re.search(r'(?:data-src|src)=["\']([^"\']+)', block, re.I)
+            image = re.search(r'data-src=["\']([^"\']+)', block, re.I)
+            if not image:
+                image = re.search(r'src=["\']([^"\']+)', block, re.I)
             duration = re.search(r'class="absolute-bottom-right"[^>]*>([\s\S]*?)</', block, re.I)
             result.append({
                 "vod_id": "jable-video:" + slug,
