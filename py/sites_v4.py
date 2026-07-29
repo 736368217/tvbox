@@ -70,8 +70,20 @@ class Spider:
                 timeout=25,
                 verify=False,
             )
+            print(
+                "[DEBUG-v9] GET status=%s len=%s watch=%s rows=%s cf=%s url=%s"
+                % (
+                    response.status_code,
+                    len(response.text),
+                    response.text.count("watch?v="),
+                    response.text.count("home-rows-videos"),
+                    "Just a moment" in response.text or "Attention Required" in response.text,
+                    url,
+                )
+            )
             return response.text
-        except Exception:
+        except Exception as error:
+            print("[DEBUG-v9] GET error=%s url=%s" % (type(error).__name__, url))
             return ""
 
     def _get_missav(self, path, query=""):
