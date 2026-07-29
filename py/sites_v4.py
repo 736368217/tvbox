@@ -52,11 +52,18 @@ class Spider:
         return ""
 
     def _headers(self, referer=""):
-        result = {
-            "User-Agent": self.UA,
-            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-            "Accept-Language": "zh-CN,zh;q=0.9,en;q=0.7",
-        }
+        if referer.startswith(self.JABLE_HOST):
+            result = {
+                "User-Agent": "PostmanRuntime/7.36.3",
+                "Host": "jable.tv",
+                "Postman-Token": "33290483-3c8d-413f-a160-0d3aea9e6f95",
+            }
+        else:
+            result = {
+                "User-Agent": self.UA,
+                "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+                "Accept-Language": "zh-CN,zh;q=0.9,en;q=0.7",
+            }
         if referer:
             result["Referer"] = referer
         return result
@@ -69,30 +76,8 @@ class Spider:
                 timeout=25,
                 verify=False,
             )
-            print(
-                "[DEBUG-v9] GET status=%s len=%s watch=%s rows=%s cf=%s url=%s"
-                % (
-                    response.status_code,
-                    len(response.text),
-                    response.text.count("watch?v="),
-                    response.text.count("home-rows-videos"),
-                    "Just a moment" in response.text or "Attention Required" in response.text,
-                    url,
-                )
-            )
-            if "jable.tv" in url:
-                try:
-                    with open(
-                        "/sdcard/Android/data/com.hlyt.gamehlythz.yscsp/files/jable-debug.html",
-                        "w",
-                        encoding="utf-8",
-                    ) as debug_file:
-                        debug_file.write(response.text)
-                except Exception:
-                    pass
             return response.text
-        except Exception as error:
-            print("[DEBUG-v9] GET error=%s url=%s" % (type(error).__name__, url))
+        except Exception:
             return ""
 
     def _get_missav(self, path, query=""):
@@ -432,9 +417,20 @@ class Spider:
             return {"list": items, "page": page, "pagecount": self._page_count(content, page), "limit": 12}
         path = tid.split(":", 1)[1] if ":" in tid else tid
         if self.mode == "jable":
-            url = "%s/%s/%s" % (self.JABLE_HOST, path.strip("/"), "" if page == 1 else str(page) + "/")
-            if "?" not in url:
-                url += "?from=%d" % page
+            if path == "latest-updates":
+                url = (
+                    self.JABLE_HOST
+                    + "/latest-updates/?mode=async&function=get_block"
+                    + "&block_id=list_videos_latest_videos_list"
+                    + "&sort_by=post_date&from=%d" % page
+                )
+            else:
+                sort = extend.get("sort_by", "video_viewed")
+                url = (
+                    "%s/%s/%d/?mode=async&function=get_block"
+                    "&block_id=list_videos_common_videos_list&sort_by=%s"
+                    % (self.JABLE_HOST, path.strip("/"), page, quote(sort))
+                )
             content = self._get(url, self.JABLE_HOST + "/")
             items = self._parse_jable(content)
         else:
