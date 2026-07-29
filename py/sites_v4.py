@@ -4,18 +4,18 @@ import json
 import re
 from urllib.parse import quote, unquote, urlencode, urljoin, urlparse
 
-from base.spider import Spider
+import requests
+import urllib3
+
+urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 
-class Spider(Spider):
+class Spider:
     UA = "Mozilla/5.0 (Linux; Android 13; TVBox) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36"
     AV_HOST = "https://123av.com"
     JABLE_HOST = "https://jable.tv"
     MISSAV_HOSTS = ("https://missav.ws", "https://missav.ai")
     HANIME_HOSTS = ("https://hanimeone.me", "https://hanime1.me")
-
-    def __new__(cls, *args, **kwargs):
-        return object.__new__(cls)
 
     def init(self, extend=""):
         try:
@@ -26,6 +26,7 @@ class Spider(Spider):
         self.hanime_host = self.HANIME_HOSTS[0]
         self.missav_host = self.MISSAV_HOSTS[0]
         self.direct_available = None
+        self.session = requests.Session()
 
     def getName(self):
         return self.mode
@@ -42,8 +43,13 @@ class Spider(Spider):
 
     def _get(self, url, referer=""):
         try:
-            response = self.fetch(url, headers=self._headers(referer))
-            return response.text if response is not None else ""
+            response = self.session.get(
+                url,
+                headers=self._headers(referer),
+                timeout=25,
+                verify=False,
+            )
+            return response.text
         except Exception:
             return ""
 
