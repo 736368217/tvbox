@@ -5,7 +5,7 @@
       "name": "MissAV",
       "type": 3,
       "api": "csp_GM",
-      "jar": "./jar/gm.jar",
+      "jar": "./jar/gm.jar;md5;30cfe9a9e5b6468e5adf058f0782a150",
       "searchable": 1,
       "quickSearch": 1,
       "filterable": 1,
@@ -13,7 +13,7 @@
       "timeout": 60,
       "style": {"type": "rect", "ratio": 1.49},
       "ext": {
-        "userScript": "./js/av123.user.js",
+        "userScript": "./js/av123.user.js?v=2",
         "playUrlMatch": [
           "https://*/v.m3u8",
           "https://*/video.m3u8*",
@@ -42,7 +42,7 @@
       "name": "Hanime",
       "type": 3,
       "api": "csp_GM",
-      "jar": "./jar/gm.jar",
+      "jar": "./jar/gm.jar;md5;30cfe9a9e5b6468e5adf058f0782a150",
       "searchable": 1,
       "quickSearch": 1,
       "filterable": 1,
@@ -50,7 +50,7 @@
       "timeout": 60,
       "style": {"type": "rect", "ratio": 0.68},
       "ext": {
-        "userScript": "./js/hanime.user.js",
+        "userScript": "./js/hanime.user.js?v=2",
         "webViewSettings": {
           "blockNetworkImage": false,
           "blockList": [
@@ -76,7 +76,7 @@
       "name": "Jable",
       "type": 3,
       "api": "csp_GM",
-      "jar": "./jar/gm.jar",
+      "jar": "./jar/gm.jar;md5;30cfe9a9e5b6468e5adf058f0782a150",
       "searchable": 1,
       "quickSearch": 1,
       "filterable": 1,
@@ -84,7 +84,7 @@
       "timeout": 60,
       "style": {"type": "rect", "ratio": 1.49},
       "ext": {
-        "userScript": "./js/av123.user.js",
+        "userScript": "./js/av123.user.js?v=2",
         "playUrlMatch": [
           "https://*/v.m3u8",
           "https://*/video.m3u8*",
@@ -113,7 +113,7 @@
       "name": "123AV",
       "type": 3,
       "api": "csp_GM",
-      "jar": "./jar/gm.jar",
+      "jar": "./jar/gm.jar;md5;30cfe9a9e5b6468e5adf058f0782a150",
       "searchable": 1,
       "quickSearch": 1,
       "filterable": 1,
@@ -121,7 +121,7 @@
       "timeout": 60,
       "style": {"type": "rect", "ratio": 1.49},
       "ext": {
-        "userScript": "./js/av123.user.js",
+        "userScript": "./js/av123.user.js?v=2",
         "playUrlMatch": [
           "https://*/v.m3u8",
           "https://*/video.m3u8*",
