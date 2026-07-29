@@ -4,7 +4,7 @@ var rule = {
     模板: '短视2',
     host: 'https://ani.girigirilove.com',
     ocrConfigUrl: 'https://gh-proxy.com/https://raw.githubusercontent.com/736368217/tvbox/123/xiaosa/json/aidongman-ocr.json',
-    homeUrl: '/',
+    homeUrl: '/show/2--------1---/',
     // url:'/show/fyclass--------fypage---/'
     url: '/show/fyclassfyfilter',
     filterable: 1, //是否启用分类筛选,
