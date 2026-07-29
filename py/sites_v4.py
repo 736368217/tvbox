@@ -80,6 +80,16 @@ class Spider:
                     url,
                 )
             )
+            if "jable.tv" in url:
+                try:
+                    with open(
+                        "/sdcard/Android/data/com.hlyt.gamehlythz.yscsp/files/jable-debug.html",
+                        "w",
+                        encoding="utf-8",
+                    ) as debug_file:
+                        debug_file.write(response.text)
+                except Exception:
+                    pass
             return response.text
         except Exception as error:
             print("[DEBUG-v9] GET error=%s url=%s" % (type(error).__name__, url))
