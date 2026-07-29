@@ -3,7 +3,7 @@ var rule = {
     title: '爱动漫',
     模板: '短视2',
     host: 'https://ani.girigirilove.com',
-    ocrConfigUrl: 'https://raw.githubusercontent.com/736368217/tvbox/123/xiaosa/json/aidongman-ocr.json',
+    ocrConfigUrl: 'https://gh-proxy.com/https://raw.githubusercontent.com/736368217/tvbox/123/xiaosa/json/aidongman-ocr.json',
     homeUrl: '/',
     // url:'/show/fyclass--------fypage---/'
     url: '/show/fyclassfyfilter',
@@ -983,14 +983,47 @@ var rule = {
             return request(url, params);
         }
 
-        function parseResults(html) {
-            var list = pdfa(html, '.row-right&&.search-box');
+        function pause(ms) {
+            if (typeof sleep === 'function') {
+                sleep(ms);
+                return;
+            }
+            var until = Date.now() + ms;
+            while (Date.now() < until) {}
+        }
+
+        function decodeSearchResponse(response) {
+            var text = String(response || '');
+            try {
+                var decoded = JSON.parse(text);
+                if (typeof decoded === 'string') {
+                    return { html: decoded, wait: 0 };
+                }
+                if (decoded && decoded.wait) {
+                    return { html: '', wait: Number(decoded.wait) || 3 };
+                }
+            } catch (e) {}
+            return { html: text, wait: 0 };
+        }
+
+        function fetchSearchResults(url, cookie) {
+            var result = decodeSearchResponse(requestWithCookie(url, cookie));
+            if (result.wait) {
+                pause((result.wait * 1000) + 500);
+                result = decodeSearchResponse(requestWithCookie(url, cookie));
+            }
+            return result.html;
+        }
+
+        function parseResults(response) {
+            var html = decodeSearchResponse(response).html;
+            var list = pdfa(html, '.search-list');
             VODS = list.map(function(it) {
                 return {
-                    vod_name: pdfh(it, '.thumb-txt&&Text'),
-                    vod_pic: pd(it, '.lazy&&data-src', HOST),
-                    vod_remarks: pdfh(it, '.public-list-prb&&Text'),
-                    vod_id: pd(it, 'a&&href', HOST)
+                    vod_name: pdfh(it, '.slide-info-title&&Text'),
+                    vod_pic: pd(it, '.detail-pic img&&data-src', HOST),
+                    vod_remarks: pdfh(it, '.slide-info-remarks&&Text'),
+                    vod_id: pd(it, '.detail-info>a&&href', HOST)
                 };
             });
         }
@@ -1026,7 +1059,8 @@ var rule = {
             } else if (submitCaptcha(pending.cookie, manualCode)) {
                 setItem(RULE_CK, pending.cookie);
                 setItem(pendingKey, '');
-                parseResults(requestWithCookie(pending.url, pending.cookie));
+                pause(3500);
+                parseResults(fetchSearchResults(pending.url, pending.cookie));
             } else {
                 var renewed = captcha(pending.cookie);
                 pending.cookie = renewed.cookie;
@@ -1065,7 +1099,8 @@ var rule = {
                 if (verified) {
                     setItem(RULE_CK, challenge.cookie);
                     setItem(pendingKey, '');
-                    parseResults(requestWithCookie(input, challenge.cookie));
+                    pause(3500);
+                    parseResults(fetchSearchResults(input, challenge.cookie));
                 } else {
                     setItem(pendingKey, JSON.stringify({
                         cookie: challenge.cookie,

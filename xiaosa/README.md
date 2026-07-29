@@ -18,7 +18,7 @@
 
 中转站需要兼容 OpenAI 的 `POST /chat/completions` 接口，模型必须支持图片输入。修改后提交并推送到 GitHub，然后在 TVBox 刷新订阅即可，不需要在 TV 上输入 API 信息。搜索 `爱动漫配置` 可查看当前生效的配置。
 
-爱动漫的 drpy 引擎、规则和 OCR 配置使用明确的 GitHub Raw 地址，不依赖 TVBox 对带查询参数的中文相对路径进行解析。
+爱动漫的 drpy 引擎、规则和 OCR 配置使用 `gh-proxy.com` 加速的明确地址，避免手机或电视网络无法直接访问 GitHub Raw。
 
 **安全提醒：** 当 GitHub 仓库是公开仓库时，不要在 `key` 中填写真实上游 API KEY，否则密钥会立即公开，并且仍可能留在 Git 历史中。推荐把上游密钥保存在 Cloudflare Worker 或自建中转站的 Secret 中，GitHub 配置只填中转地址并保持 `key` 为空。如果中转站必须要求客户端令牌，只使用可随时撤销、限额和限定路由的令牌。
 
