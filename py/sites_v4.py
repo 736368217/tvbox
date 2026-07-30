@@ -17,7 +17,7 @@ class Spider:
     JABLE_HOST = "https://jable.tv"
     JINA_READER = "https://r.jina.ai/"
     MISSAV_HOSTS = ("https://missav.ws", "https://missav.ai")
-    HANIME_HOSTS = ("https://hanime1.best", "https://hanimeone.me", "https://hanime1.me")
+    HANIME_HOSTS = ("https://hanimeone.me", "https://hanime1.me", "https://hanime1.best")
 
     def init(self, extend=""):
         try:
@@ -27,6 +27,7 @@ class Spider:
             self.mode = str(extend or "123av")
         self.hanime_host = self.HANIME_HOSTS[0]
         self.missav_host = self.MISSAV_HOSTS[0]
+        self.missav_routes = {}
         self.session = requests.Session()
 
     def getName(self):
@@ -75,7 +76,7 @@ class Spider:
         except Exception:
             return ""
 
-    def _get_jable(self, url, fresh=False):
+    def _get_reader(self, url, fresh=False):
         headers = {
             "User-Agent": self.JINA_UA,
             "Accept": "text/plain",
@@ -93,16 +94,43 @@ class Spider:
         except Exception:
             return ""
 
+    def _get_jable(self, url, fresh=False):
+        return self._get_reader(url, fresh)
+
+    @staticmethod
+    def _is_challenge(content):
+        value = (content or "").lower()
+        return any(marker in value for marker in (
+            "<title>just a moment", "cf-error-details", "error code: 1015",
+        ))
+
     def _get_missav(self, path, query=""):
         path = "/" + path.lstrip("/")
         hosts = (self.missav_host,) + tuple(host for host in self.MISSAV_HOSTS if host != self.missav_host)
         for host in hosts:
             url = host + path + query
             content = self._get(url, host + "/cn/")
-            if content and "error code: 1015" not in content.lower() and "cf-error-details" not in content.lower():
+            if content and not self._is_challenge(content):
                 self.missav_host = host
                 return content, url
         return "", self.missav_host + path + query
+
+    def _resolve_missav_path(self, path):
+        path = path.strip("/")
+        if path in self.missav_routes:
+            return self.missav_routes[path]
+        content, url = self._get_missav("/cn/new")
+        if not content:
+            content = self._get_reader(url, fresh=True)
+        pattern = re.compile(
+            r'href=["\'](?:https?://[^/"\']+)?((?:/dm\d+)?/cn/([^"\'?#]+))',
+            re.I,
+        )
+        for request_path, route in pattern.findall(content or ""):
+            route = html.unescape(route).strip("/")
+            if route not in self.missav_routes:
+                self.missav_routes[route] = html.unescape(request_path)
+        return self.missav_routes.get(path, "/cn/" + path)
 
     @staticmethod
     def _unpack_packer(content):
@@ -252,7 +280,11 @@ class Spider:
         result = []
         seen = set()
         for block in re.split(r'class="thumbnail', content, flags=re.I)[1:]:
-            match = re.search(r'href=["\'](?:https://missav\.[^/]+)?/(?:cn/)?([^"\'?#]+)', block, re.I)
+            match = re.search(
+                r'href=["\'](?:https://missav\.[^/]+)?(?:/dm\d+)?/(?:cn/)?([^"\'?#]+)',
+                block,
+                re.I,
+            )
             if not match:
                 continue
             path = match.group(1).strip("/")
@@ -502,8 +534,13 @@ class Spider:
                 if extend.get(key):
                     params[key] = extend[key]
             query = "?" + urlencode(params)
-            request_path = path if path.startswith("/") and "/cn/" in path else "/cn/%s" % path.strip("/")
+            request_path = (
+                path if path.startswith("/") and "/cn/" in path
+                else self._resolve_missav_path(path)
+            )
             content, url = self._get_missav(request_path, query)
+            if not content:
+                content = self._get_reader(url)
             if path in ("actresses/ranking", "makers", "genres"):
                 roots = ("actresses",) if path == "actresses/ranking" else (path,)
                 items = self._parse_missav_folders(content, roots)
@@ -576,6 +613,8 @@ class Spider:
             source_name = "Jable"
         else:
             content, url = self._get_missav("/cn/%s" % path.strip("/"))
+            if not content:
+                content = self._get_reader(url, fresh=True)
             source = re.search(r'(?:hls\.url\s*=\s*|"hls"\s*:\s*)["\']([^"\']+)', content, re.I)
             if not source:
                 source = re.search(r'https?://[^\s"\']+\.m3u8[^\s"\']*', content, re.I)
@@ -587,8 +626,6 @@ class Spider:
         poster = re.search(r'<meta[^>]+property="og:image"[^>]+content="([^"]+)"', content, re.I)
         media_url = html.unescape(source.group(1) if source and source.lastindex else source.group(0) if source else "")
         variants = self._media_variants(media_url, url)
-        if self.mode == "jable" and variants and variants[0][0] == "播放":
-            variants[0] = ("1080P", variants[0][1])
         if not variants:
             variants = [("网页播放", url)]
         return {"list": [{
@@ -603,17 +640,28 @@ class Spider:
         vod_id = ids[0]
         if vod_id.startswith("hanime-video:"):
             vid = vod_id.split(":", 1)[1]
-            url = "%s/watch?v=%s" % (self.hanime_host, vid)
-            content = self._get(url, self.hanime_host + "/")
+            sources = []
+            content = ""
+            hosts = (self.hanime_host,) + tuple(
+                host for host in self.HANIME_HOSTS if host != self.hanime_host
+            )
+            for host in hosts:
+                url = "%s/watch?v=%s" % (host, vid)
+                candidate = self._get(url, host + "/")
+                candidate_sources = []
+                for tag in re.findall(r'<source[^>]+>', candidate, re.I):
+                    src = self._attr(tag, "src")
+                    quality = self._attr(tag, "size") or self._attr(tag, "label")
+                    if src:
+                        quality = (quality + "P") if quality.isdigit() else (quality or "播放")
+                        candidate_sources.append((quality, html.unescape(src)))
+                if candidate_sources:
+                    self.hanime_host = host
+                    content = candidate
+                    sources = candidate_sources
+                    break
             title = re.search(r'<meta[^>]+property="og:title"[^>]+content="([^"]+)"', content, re.I)
             poster = re.search(r'<meta[^>]+property="og:image"[^>]+content="([^"]+)"', content, re.I)
-            sources = []
-            for tag in re.findall(r'<source[^>]+>', content, re.I):
-                src = self._attr(tag, "src")
-                quality = self._attr(tag, "size") or self._attr(tag, "label")
-                if src:
-                    quality = (quality + "P") if quality.isdigit() else (quality or "播放")
-                    sources.append((quality, html.unescape(src)))
             sources.sort(key=lambda item: int(re.sub(r"\D", "", item[0]) or 0), reverse=True)
             return {"list": [{
                 "vod_id": vid,
@@ -641,6 +689,8 @@ class Spider:
             items = self._parse_jable(content)
         elif self.mode == "missav":
             content, url = self._get_missav("/cn/search/%s" % quote(key, safe=""), "?page=%d" % page)
+            if not content:
+                content = self._get_reader(url)
             items = self._parse_missav(content)
         else:
             url = "%s/en/search?keyword=%s&page=%d" % (self.AV_HOST, quote(key), page)
