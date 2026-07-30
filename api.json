@@ -53,10 +53,10 @@
       "style": {"type": "rect", "ratio": 1.49}
     },
     {
-      "key": "v23_KanAV",
+      "key": "v24_KanAV",
       "name": "KanAV",
       "type": 3,
-      "api": "https://ghfast.top/https://raw.githubusercontent.com/736368217/tvbox/456/py/kanav_v2.py",
+      "api": "https://ghfast.top/https://raw.githubusercontent.com/736368217/tvbox/456/py/kanav_v3.py",
       "searchable": 1,
       "quickSearch": 1,
       "filterable": 0,

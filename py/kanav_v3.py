@@ -12,6 +12,7 @@ urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 
 class Spider:
+    READER = 'https://r.jina.ai/'
     HOSTS = (
         'https://kanav.ad',
         'https://kanav.info',
@@ -79,7 +80,7 @@ class Spider:
     def _fetch(self, url, referer=''):
         try:
             response = self.session.get(
-                url, headers=self._headers(referer), timeout=25, verify=False)
+                url, headers=self._headers(referer), timeout=12, verify=False)
             if response.status_code == 200:
                 response.encoding = 'utf-8'
                 return response.text
@@ -87,10 +88,27 @@ class Spider:
             pass
         return ''
 
+    def _fetch_page(self, url, marker):
+        content = self._fetch(url, self.host + '/')
+        if marker in content:
+            return content
+        try:
+            response = self.session.get(
+                self.READER + url,
+                headers={'User-Agent': 'TVBox/1.0', 'X-Return-Format': 'html'},
+                timeout=50,
+            )
+            if response.status_code == 200 and marker in response.text:
+                return response.text
+        except Exception:
+            pass
+        return content
+
     def _select_host(self):
         for candidate in self.HOSTS:
             url = candidate + '/index.php/vod/type/id/1/page/1.html'
-            content = self._fetch(url, candidate + '/')
+            self.host = candidate
+            content = self._fetch_page(url, 'video-item')
             if self._parse_cards(content):
                 self.host = candidate
                 return
@@ -167,7 +185,7 @@ class Spider:
     def categoryContent(self, tid, pg, filter, extend):
         page = int(pg or 1)
         url = '%s/index.php/vod/type/id/%s/page/%d.html' % (self.host, tid, page)
-        content = self._fetch(url, self.host + '/')
+        content = self._fetch_page(url, 'video-item')
         items = self._parse_cards(content)
         return {
             'list': items,
@@ -179,7 +197,7 @@ class Spider:
     def detailContent(self, ids):
         path = str(ids[0]).split(':', 1)[-1]
         url = urljoin(self.host + '/', path)
-        content = self._fetch(url, self.host + '/')
+        content = self._fetch_page(url, 'player_')
         data = self._player_data(content)
         vod_data = data.get('vod_data') or {}
         media = self._decode_media(data.get('url', ''))
@@ -206,7 +224,7 @@ class Spider:
         page = int(pg or 1)
         path = '/index.php/vod/search/by/time_add/page/%d/wd/%s.html' % (
             page, quote(key, safe=''))
-        content = self._fetch(self.host + path, self.host + '/')
+        content = self._fetch_page(self.host + path, 'video-item')
         items = self._parse_cards(content)
         return {
             'list': items,
