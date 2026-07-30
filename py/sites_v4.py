@@ -100,9 +100,11 @@ class Spider:
     @staticmethod
     def _is_challenge(content):
         value = (content or "").lower()
-        return any(marker in value for marker in (
-            "<title>just a moment", "cf-error-details", "error code: 1015",
-        ))
+        if re.search(r"<title[^>]*>\s*just a moment", value):
+            return True
+        if any(marker in value for marker in ("cf-error-details", "error code: 1015")):
+            return True
+        return "challenge-platform" in value and len(value) < 30000
 
     def _get_missav(self, path, query=""):
         path = "/" + path.lstrip("/")
