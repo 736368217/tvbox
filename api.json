@@ -27,10 +27,10 @@
       "style": {"type": "rect", "ratio": 0.68}
     },
     {
-      "key": "v17_Jable",
+      "key": "v18_Jable",
       "name": "Jable",
       "type": 3,
-      "api": "https://ghfast.top/https://raw.githubusercontent.com/736368217/tvbox/456/py/sites_v4.py",
+      "api": "https://ghfast.top/https://raw.githubusercontent.com/736368217/tvbox/456/py/sites_v4.py?v=18",
       "ext": "jable",
       "searchable": 1,
       "quickSearch": 1,

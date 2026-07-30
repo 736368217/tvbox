@@ -12,7 +12,7 @@ urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 class Spider:
     UA = "Mozilla/5.0 (Linux; Android 13; TVBox) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36"
-    JINA_UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36"
+    JINA_UA = "TVBox/1.0"
     AV_HOST = "https://123av.com"
     JABLE_HOST = "https://jable.tv"
     JINA_READER = "https://r.jina.ai/"
