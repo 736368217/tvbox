@@ -51,6 +51,30 @@
       "changeable": 0,
       "timeout": 60,
       "style": {"type": "rect", "ratio": 1.49}
+    },
+    {
+      "key": "v21_KanAV",
+      "name": "KanAV",
+      "type": 3,
+      "api": "https://ghfast.top/https://raw.githubusercontent.com/736368217/tvbox/456/py/kanav.py?v=1",
+      "searchable": 1,
+      "quickSearch": 1,
+      "filterable": 0,
+      "changeable": 0,
+      "timeout": 60,
+      "style": {"type": "rect", "ratio": 1.49}
+    },
+    {
+      "key": "v21_18AV",
+      "name": "18AV",
+      "type": 3,
+      "api": "https://ghfast.top/https://raw.githubusercontent.com/736368217/tvbox/456/py/mm18av.py?v=1",
+      "searchable": 1,
+      "quickSearch": 1,
+      "filterable": 1,
+      "changeable": 0,
+      "timeout": 60,
+      "style": {"type": "rect", "ratio": 1.49}
     }
   ],
   "lives": [],
