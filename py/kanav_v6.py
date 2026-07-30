@@ -186,11 +186,6 @@ class Spider:
         url = '%s/index.php/vod/type/id/%s/page/%d.html' % (self.host, tid, page)
         content = self._fetch_page(url, 'video-item')
         items = self._parse_cards(content)
-        if not items:
-            title = re.search(r'<title[^>]*>(.*?)</title>', content or '', re.I | re.S)
-            diagnostic = self._clean(title.group(1)) if title else (content or '')[:120]
-            raise RuntimeError('KanAV empty response: length=%d title=%s' % (
-                len(content or ''), diagnostic))
         return {
             'list': items,
             'page': page,
@@ -236,6 +231,9 @@ class Spider:
             'pagecount': self._page_count(content, page),
             'limit': len(items) or 24,
         }
+
+    def searchContentPage(self, key, quick, pg='1'):
+        return self.searchContent(key, quick, pg)
 
     def playerContent(self, flag, vod_id, vipFlags=None):
         if not str(vod_id).startswith('http'):

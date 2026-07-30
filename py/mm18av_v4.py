@@ -719,4 +719,13 @@ class Spider:
             m3u8 = next((url for url, size in sources if size == res), '')
         elif sources:
             m3u8 = max(sources, key=lambda item: int(item[1]) if item[1].isdigit() else 0)[0]
-        return {'parse': 0, 'url': m3u8, 'header': {'Referer': self.host + '/'}, 'position': '0'}
+        return {
+            'parse': 0,
+            'url': m3u8,
+            'header': {
+                'User-Agent': self.headers.get('User-Agent', 'Mozilla/5.0'),
+                'Referer': self.host + '/',
+                'Origin': self.host,
+            },
+            'position': '0',
+        }
