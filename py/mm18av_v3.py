@@ -169,6 +169,8 @@ class Spider:
 
     def getName(self): return "18AV"
 
+    def getDependence(self): return []
+
     def isVideoFormat(self, url):
         if not url: return False
         return '.m3u8' in url or '.mp4' in url or '.ts' in url
