@@ -3,18 +3,15 @@ import base64
 import html
 import json
 import re
-import sys
 from urllib.parse import quote, unquote, urljoin
 
 import requests
 import urllib3
 
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
-sys.path.append('..')
-from base.spider import Spider
 
 
-class Spider(Spider):
+class Spider:
     HOSTS = (
         'https://kanav.ad',
         'https://kanav.info',

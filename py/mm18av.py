@@ -2,7 +2,6 @@
 # Based on the public 18AV spider from wanganni/yinshiyuan, with current
 # domain discovery, updated list parsing, and verified quality selection.
 # -*- coding: utf-8 -*-
-import sys
 import re
 import json
 import base64
@@ -11,8 +10,6 @@ import urllib3
 from urllib.parse import unquote, quote, urlsplit
 
 urllib3.disable_warnings()
-sys.path.append('..')
-from base.spider import Spider
 
 # ===== 纯 Python AES-128 工具 =====
 _sbox = bytes([
@@ -158,7 +155,7 @@ def _is_image(tid_or_vid):
 
 
 # ===== Spider =====
-class Spider(Spider):
+class Spider:
     session = requests.Session()
     host = 'https://mjv014.com'
     release_url = 'https://mm18vd.com/'

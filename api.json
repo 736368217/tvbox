@@ -53,10 +53,10 @@
       "style": {"type": "rect", "ratio": 1.49}
     },
     {
-      "key": "v21_KanAV",
+      "key": "v22_KanAV",
       "name": "KanAV",
       "type": 3,
-      "api": "https://ghfast.top/https://raw.githubusercontent.com/736368217/tvbox/456/py/kanav.py?v=1",
+      "api": "https://ghfast.top/https://raw.githubusercontent.com/736368217/tvbox/456/py/kanav.py?v=2",
       "searchable": 1,
       "quickSearch": 1,
       "filterable": 0,
@@ -65,10 +65,10 @@
       "style": {"type": "rect", "ratio": 1.49}
     },
     {
-      "key": "v21_18AV",
+      "key": "v22_18AV",
       "name": "18AV",
       "type": 3,
-      "api": "https://ghfast.top/https://raw.githubusercontent.com/736368217/tvbox/456/py/mm18av.py?v=1",
+      "api": "https://ghfast.top/https://raw.githubusercontent.com/736368217/tvbox/456/py/mm18av.py?v=2",
       "searchable": 1,
       "quickSearch": 1,
       "filterable": 1,
