@@ -44,7 +44,6 @@ class Spider:
         self.session = requests.Session()
         self.session.verify = False
         self.host = self.HOSTS[0]
-        self._select_host()
 
     def getName(self):
         return 'KanAV'
