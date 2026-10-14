@@ -39,3 +39,16 @@ with Jable's signed HLS exposed as 1080P.
 
 Whenever a py/*.py file changes, bump the ?v= query on its pi URL in pi.json so clients refetch
 the new copy instead of a cached one.
+
+
+## Import URL
+
+For clients in mainland China import the proxied form (no VPN needed to fetch the config):
+
+`
+https://ghfast.top/https://raw.githubusercontent.com/736368217/tvbox/456/api.json
+`
+
+The direct 
+aw.githubusercontent.com form only works where GitHub raw is reachable; the spider files
+themselves are already requested through the same proxy.
