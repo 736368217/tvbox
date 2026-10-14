@@ -95,6 +95,11 @@ class Spider:
             return ""
 
     def _get_jable(self, url, fresh=False):
+        # direct first (works whenever the client's egress is not Cloudflare-blocked),
+        # then fall back to the reader service.
+        content = self._get(url, "https://jable.tv/")
+        if content and not self._is_challenge(content):
+            return content
         return self._get_reader(url, fresh)
 
     @staticmethod
@@ -112,6 +117,13 @@ class Spider:
         for host in hosts:
             url = host + path + query
             content = self._get(url, host + "/cn/")
+            if content and not self._is_challenge(content):
+                self.missav_host = host
+                return content, url
+        # every host was challenged or unreachable: retry through the reader service
+        for host in hosts:
+            url = host + path + query
+            content = self._get_reader(url, True)
             if content and not self._is_challenge(content):
                 self.missav_host = host
                 return content, url
