@@ -13,6 +13,9 @@ https://raw.githubusercontent.com/736368217/tvbox/xiaosa-unlimited/api.json
 
 JAR 由配置里的 `./spider.jar` 相对路径推导 → `…/xiaosa-unlimited/spider.jar`。
 
+当前发布：`spider.jar` md5 `004925f3b80caab4005b96834fd9c28c`（CI 生成；其 `classes.dex` 与本地
+验证过的补丁产物逐字节一致，sha256 `2650256cc04f0452847e47557857600d…`）。
+
 ## 改了什么
 
 补丁脚本 `tools/patch_jar.py`（纯 Python、无需 Java，逐字节原地改写 + 重算 DEX 头校验）：
@@ -55,7 +58,9 @@ $decl = ($api | ConvertFrom-Json).spider -split ";md5;" | Select-Object -Last 1
 Invoke-WebRequest "$base/spider.jar" -OutFile "$env:TEMP\s.jar" -UseBasicParsing
 "declared=$decl"
 "actual  =" + (Get-FileHash "$env:TEMP\s.jar" -Algorithm MD5).Hash.ToLower()
-# 两者一致即正常；本地复跑补丁应得到同一个 md5（脚本是确定性的）
+# 两者一致即正常。补丁是确定性的（同一环境、同一输入 -> 同一输出）；
+# 不同 Python/zlib 版本的 deflate 输出可能不同，因此工作流每次都会重算 md5 并改写 api.json，
+# 校验「声明值 == 实际 jar md5」后才提交。
 python tools/patch_jar.py .\spider.jar .\spider.check.jar --report
 ```
 
