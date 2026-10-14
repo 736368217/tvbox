@@ -1,0 +1,83 @@
+name: xiaosa-unlimited sync
+
+# Keeps the `xiaosa-unlimited` branch in sync with this repository's `master`
+# xiaosa/ directory while re-applying the identity-gate removal patch to
+# spider.jar. Source is our own master (not qist/tvbox directly) so the local
+# aidongman overlays and any other customisations are preserved.
+#
+# FAIL CLOSED: if the patch fingerprints are missing (upstream changed the jar
+# structure) this job fails and the branch keeps its last good revision.
+
+on:
+  schedule:
+    - cron: "43 5,17 * * *"      # 13:43 / 01:43 CST, shortly after upstream's 05:3x UTC push
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: xiaosa-unlimited-sync
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout xiaosa-unlimited
+        uses: actions/checkout@v4
+        with:
+          ref: xiaosa-unlimited
+          fetch-depth: 0
+          path: target
+
+      - name: Fetch xiaosa/ from master
+        run: |
+          git clone --depth 1 --filter=blob:none --sparse \
+            "https://github.com/${{ github.repository }}.git" source
+          cd source
+          git sparse-checkout set xiaosa
+
+      - name: Patch spider.jar (fail closed)
+        run: |
+          python3 target/tools/patch_jar.py source/xiaosa/spider.jar /tmp/spider.jar --report
+
+      - name: Rebuild branch content
+        run: |
+          cd target
+          rsync -a --delete \
+            --exclude 'spider.jar' --exclude 'api.json' \
+            --exclude 'tools/' --exclude '.github/' \
+            --exclude 'README-XIAOSA-UNLIMITED.md' \
+            ../source/xiaosa/ ./
+          cp /tmp/spider.jar ./spider.jar
+          python3 tools/update_config.py ../source/xiaosa/api.json ./api.json ./spider.jar
+
+      - name: Verify patch result
+        run: |
+          cd target
+          python3 - <<'PY'
+          import hashlib, re, sys
+          raw = open("api.json", "rb").read()
+          m = re.search(rb'"spider"\s*:\s*"[^"]*;md5;([0-9a-fA-F]{32})"', raw)
+          if not m:
+              sys.exit("no spider md5 declaration")
+          declared = m.group(1).decode().lower()
+          actual = hashlib.md5(open("spider.jar", "rb").read()).hexdigest()
+          if declared != actual:
+              sys.exit("md5 mismatch: declared=%s actual=%s" % (declared, actual))
+          print("declared md5 == jar md5:", declared)
+          PY
+
+      - name: Commit and push
+        run: |
+          cd target
+          git config user.name  "xiaosa-unlimited-bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add -A
+          if git diff --cached --quiet; then
+            echo "no change"
+            exit 0
+          fi
+          git commit -m "sync: $(date -u +%Y-%m-%dT%H:%MZ)"
+          git push origin HEAD:xiaosa-unlimited
