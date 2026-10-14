@@ -47,7 +47,7 @@ jobs:
           cd target
           rsync -a --delete \
             --exclude 'spider.jar' --exclude 'api.json' \
-            --exclude 'tools/' --exclude '.github/' \
+            --exclude 'tools/' --exclude '.github/' --exclude '.git/' \
             --exclude 'README-XIAOSA-UNLIMITED.md' \
             ../source/xiaosa/ ./
           cp /tmp/spider.jar ./spider.jar
