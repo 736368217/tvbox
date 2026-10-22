@@ -94,6 +94,91 @@ class Spider:
         except Exception:
             return ""
 
+    MISSAV_MIRROR = "https://missav.app"
+    JABLE_MIRROR = "https://jable.vip"
+
+    def _get_mirror(self, path, query="", host=""):
+        host = host or (self.MISSAV_MIRROR if self.mode == "missav" else self.JABLE_MIRROR)
+        url = host + path + query
+        content = self._get(url, host + "/")
+        if content and not self._is_challenge(content):
+            return content, url
+        content = self._get_reader(url, True)
+        if content and not self._is_challenge(content):
+            return content, url
+        return "", url
+
+    @staticmethod
+    def _parse_mirror_cards(content):
+        result = []
+        seen = set()
+        for block in re.split(r'class="(?:video-img-box|thumbnail)', content or "", flags=re.I)[1:]:
+            match = re.search(r'href=["\'](?:https?://[^/]+)?/vodplay/([^"\'?#]+)', block, re.I)
+            if not match:
+                continue
+            slug = html.unescape(match.group(1)).strip("/")
+            if not slug or slug in seen:
+                continue
+            seen.add(slug)
+            alt = re.search(r'<img[^>]+alt=["\']([^"\']*)', block, re.I)
+            title = html.unescape(alt.group(1)).strip() if alt else ""
+            if not title:
+                title_match = re.search(r'class="title"[^>]*>[\s\S]*?<a[^>]*>([\s\S]*?)</a>', block, re.I)
+                title = Spider._clean(title_match.group(1)) if title_match else slug
+            image = re.search(r'(?:data-src|src)=["\']([^"\']+)', block, re.I)
+            remarks = re.search(r'class="ribbon-top-left"[^>]*>([\s\S]*?)</', block, re.I)
+            result.append({
+                "vod_id": "mirror-video:" + slug,
+                "vod_name": title or slug,
+                "vod_pic": html.unescape(image.group(1)) if image else "",
+                "vod_remarks": Spider._clean(remarks.group(1)) if remarks else "",
+            })
+        return result
+
+    def _mirror_category(self, tid, page):
+        key = tid.split(":", 1)[-1]
+        path = "/label/hot/" if "hot" in key else "/label/new/"
+        query = "?page=%d" % page if page > 1 else ""
+        content, url = self._get_mirror(path, query)
+        items = self._parse_mirror_cards(content)
+        return {"list": items, "page": page, "pagecount": self._page_count(content, page), "limit": len(items) or 24}
+
+    def _mirror_search(self, key, page=1):
+        path = "/vodsearch/%s-------------/" % quote(key, safe="")
+        query = "?page=%d" % page if page > 1 else ""
+        content, url = self._get_mirror(path, query)
+        items = self._parse_mirror_cards(content)
+        return {"list": items, "page": page, "pagecount": self._page_count(content, page), "limit": len(items) or 24}
+
+    def _mirror_detail(self, slug):
+        host = self.MISSAV_MIRROR if self.mode == "missav" else self.JABLE_MIRROR
+        path = "/vodplay/%s/" % slug.strip("/")
+        content, url = self._get_mirror(path)
+        if not content:
+            return {"list": []}
+        title = re.search(r'<meta[^>]+property="og:title"[^>]+content="([^"]+)"', content, re.I)
+        poster = re.search(r'<meta[^>]+property="og:image"[^>]+content="([^"]+)"', content, re.I)
+        media_url = ""
+        player = re.search(r'player_aaaa\s*=\s*(\{[\s\S]*?\})\s*</script>', content, re.I)
+        if player:
+            try:
+                player_data = json.loads(player.group(1))
+                media_url = player_data.get("url") or player_data.get("url_next") or ""
+            except Exception:
+                media_url = ""
+        if not media_url:
+            source = re.search(r'https?://[^\s"\'<>]+\.m3u8[^\s"\'<>]*', content, re.I)
+            media_url = source.group(0) if source else ""
+        if not media_url:
+            return {"list": []}
+        return {"list": [{
+            "vod_id": slug,
+            "vod_name": html.unescape(title.group(1)) if title else slug,
+            "vod_pic": html.unescape(poster.group(1)) if poster else "",
+            "vod_play_from": "MissAV" if self.mode == "missav" else "Jable",
+            "vod_play_url": "1080P$" + media_url,
+        }]}
+
     def _get_jable(self, url, fresh=False):
         # direct first (works whenever the client's egress is not Cloudflare-blocked),
         # then fall back to the reader service.
@@ -509,6 +594,10 @@ class Spider:
     def categoryContent(self, tid, pg, filter, extend):
         page = int(pg or 1)
         extend = extend or {}
+        if self.mode in ("missav", "jable"):
+            mirror = self._mirror_category(tid, page)
+            if mirror.get("list"):
+                return mirror
         if self.mode == "hanime":
             rank = {
                 "latest_rank": "最新上市", "daily_rank": "本日排行",
@@ -561,6 +650,8 @@ class Spider:
                 return {"list": items, "page": page, "pagecount": self._page_count(content, page), "limit": len(items) or 1}
             else:
                 items = self._parse_missav(content)
+        if not items and self.mode in ("missav", "jable"):
+            return self._mirror_category(tid, page)
         return {"list": items, "page": page, "pagecount": self._page_count(content, page), "limit": 24}
 
     def _media_variants(self, media_url, referer):
@@ -652,6 +743,8 @@ class Spider:
 
     def detailContent(self, ids):
         vod_id = ids[0]
+        if vod_id.startswith("mirror-video:"):
+            return self._mirror_detail(vod_id.split(":", 1)[1])
         if vod_id.startswith("hanime-video:"):
             vid = vod_id.split(":", 1)[1]
             sources = []
@@ -693,6 +786,10 @@ class Spider:
 
     def searchContent(self, key, quick, pg="1", extend=None):
         page = int(pg or 1)
+        if self.mode in ("missav", "jable"):
+            mirror = self._mirror_search(key, page)
+            if mirror.get("list"):
+                return mirror
         if self.mode == "hanime":
             url = "%s/search?query=%s&page=%d" % (self.hanime_host, quote(key), page)
             content = self._get(url, self.hanime_host + "/")
@@ -710,6 +807,8 @@ class Spider:
             url = "%s/en/search?keyword=%s&page=%d" % (self.AV_HOST, quote(key), page)
             content = self._get(url, self.AV_HOST + "/en/")
             items = self._parse_av_cards(content)
+        if not items and self.mode in ("missav", "jable"):
+            return self._mirror_search(key, page)
         return {"list": items, "page": page, "pagecount": self._page_count(content, page)}
 
     def playerContent(self, flag, vod_id, vipFlags):
