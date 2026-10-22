@@ -12,7 +12,7 @@ const site = {
   key: "爱动漫",
   name: "爱动漫 • 动漫",
   type: 3,
-  api: "./js/爱动漫.js?v=1",
+  api: "./js/爱动漫.js?v=2",
   searchable: 1,
   quickSearch: 1,
   filterable: 1,
