@@ -78,7 +78,8 @@ const arrayText = "[\n" + rawEntries.map((entry) => indent + entry).join(",\n") 
 
 let next = source.slice(0, arrayStart) + arrayText + source.slice(arrayEnd + 1);
 const parsed = JSON.parse(next);
-if (parsed.sites.length !== siteValues.length || parsed.sites[0].key !== "爱动漫") {
+const expectedCount = siteValues.length + (siteValues.some((item) => item.key === "爱动漫") ? 0 : 1);
+if (parsed.sites.length !== expectedCount || parsed.sites[0].key !== "爱动漫") {
   throw new Error("爱动漫入口定位失败");
 }
 if (next !== source) {
