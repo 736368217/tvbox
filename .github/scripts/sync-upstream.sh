@@ -1,76 +1,37 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-branch="$1"
-variant="$2"
+branch="${1:-123}"
 upstream_ref="upstream/master"
-overlay_dir="$(mktemp -d)"
-trap 'rm -rf "$overlay_dir"' EXIT
 
-overlay_files=(
-  .github/scripts/ensure-aidongman.mjs
-  .github/scripts/sync-upstream.sh
-  .github/workflows/sync-upstream.yml
-  .github/workflows/run.yml
-  xiaosa/js/aidongman-drpy-core-lite.min.js
-  xiaosa/js/aidongman-drpy2.min.js
-  xiaosa/js/爱动漫.js
-)
-
-if [[ "$variant" == "search" ]]; then
-  overlay_files+=(xiaosa/README.md xiaosa/json/aidongman-ocr.json)
+if ! git remote get-url upstream >/dev/null 2>&1; then
+  git remote add upstream https://github.com/qist/tvbox.git
 fi
 
-for file in "${overlay_files[@]}"; do
-  if [[ -f "$file" ]]; then
-    mkdir -p "$overlay_dir/$(dirname "$file")"
-    cp "$file" "$overlay_dir/$file"
-  fi
-done
+readme_backup="$(mktemp)"
+cp xiaosa/README.md "$readme_backup"
+trap 'rm -f "$readme_backup"' EXIT
 
-if git merge-base --is-ancestor "$upstream_ref" HEAD; then
-  echo "$branch 已包含最新上游提交"
-else
-  set +e
-  git merge --no-ff --no-commit "$upstream_ref"
-  merge_status=$?
-  set -e
+git fetch --depth=1 upstream master
 
-  if (( merge_status != 0 )); then
-    conflicts="$(git diff --name-only --diff-filter=U)"
-    while IFS= read -r file; do
-      [[ -z "$file" ]] && continue
-      if [[ "$file" == "xiaosa/api.json" ]]; then
-        git checkout --theirs -- "$file"
-        git add "$file"
-      elif printf '%s\n' "${overlay_files[@]}" | grep -Fxq "$file"; then
-        echo "保留受保护文件：$file"
-      else
-        echo "检测到不能自动处理的冲突：$file" >&2
-        exit 1
-      fi
-    done <<< "$conflicts"
-  fi
-fi
+# 只同步上游的 xiaosa 目录；不合并其他配置、jar、直播源等文件。
+git checkout "$upstream_ref" -- xiaosa
+cp "$readme_backup" xiaosa/README.md
 
-for file in "${overlay_files[@]}"; do
-  if [[ -f "$overlay_dir/$file" ]]; then
-    mkdir -p "$(dirname "$file")"
-    cp "$overlay_dir/$file" "$file"
-  fi
-done
+# 爱动漫固定放在站点列表第一位；随后按 api.json 引用裁剪 xiaosa 文件，并清理根目录其他内容。
+node .github/scripts/ensure-aidongman.mjs search "$branch"
+node .github/scripts/prepare-xiaosa.mjs
 
-node .github/scripts/ensure-aidongman.mjs "$variant" "$branch"
-node --check xiaosa/js/爱动漫.js
-node --input-type=module --check < xiaosa/js/aidongman-drpy2.min.js
-node -e "const d=require('./xiaosa/api.json'); if(d.sites.filter(x=>x.key==='爱动漫').length!==1) process.exit(1)"
-grep -q 'aidongman-drpy-core-lite.min.js' xiaosa/js/aidongman-drpy2.min.js
+node --check .github/scripts/ensure-aidongman.mjs
+node --check .github/scripts/prepare-xiaosa.mjs
+node -e "const d=require('./xiaosa/api.json'); if (!Array.isArray(d.sites) || !d.sites.length || d.sites[0].key !== '爱动漫') process.exit(1)"
+test -f xiaosa/spider.jar
 
-git add --all
+git add -A
 if git diff --cached --quiet; then
-  echo "$branch 无需更新"
+  echo "xiaosa 订阅已是最新"
   exit 0
 fi
 
-git commit -m "sync: update from qist/tvbox master"
+git commit -m "sync: update xiaosa api only"
 git push origin "HEAD:$branch"

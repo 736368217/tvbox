@@ -4,35 +4,27 @@ const variant = process.argv[2];
 const branch = process.argv[3];
 const apiPath = "xiaosa/api.json";
 
-if (!['master', 'search'].includes(variant) || !branch) {
-  throw new Error('Usage: node ensure-aidongman.mjs <master|search> <branch>');
+if (!["master", "search"].includes(variant) || !branch) {
+  throw new Error("Usage: node ensure-aidongman.mjs <master|search> <branch>");
 }
 
-const site = variant === 'search'
-  ? {
-      key: '爱动漫',
-      name: '爱动漫 • 动漫',
-      type: 1,
-      api: 'https://m3u8.girigirilove.com/api.php/provide/vod/',
-      searchable: 1,
-      quickSearch: 1,
-      filterable: 0,
-    }
-  : {
-      key: '爱动漫',
-      name: '爱动漫｜动漫',
-      type: 1,
-      api: 'https://m3u8.girigirilove.com/api.php/provide/vod/',
-      searchable: 1,
-      quickSearch: 1,
-      filterable: 0,
-    };
+const site = {
+  key: "爱动漫",
+  name: "爱动漫 • 动漫",
+  type: 1,
+  api: "https://m3u8.girigirilove.com/api.php/provide/vod/",
+  searchable: 1,
+  quickSearch: 1,
+  filterable: 0,
+};
 
-const source = fs.readFileSync(apiPath, 'utf8');
+const source = fs.readFileSync(apiPath, "utf8");
 const data = JSON.parse(source);
 const sitesStart = source.indexOf('"sites"');
-const arrayStart = source.indexOf('[', sitesStart);
-if (sitesStart < 0 || arrayStart < 0) throw new Error('找不到 sites 数组');
+const arrayStart = source.indexOf("[", sitesStart);
+if (sitesStart < 0 || arrayStart < 0) {
+  throw new Error("找不到 sites 数组");
+}
 
 function matchingBrace(text, start, open, close) {
   let depth = 0;
@@ -42,7 +34,7 @@ function matchingBrace(text, start, open, close) {
     const ch = text[i];
     if (quote) {
       if (escaped) escaped = false;
-      else if (ch === '\\') escaped = true;
+      else if (ch === "\\") escaped = true;
       else if (ch === '"') quote = false;
       continue;
     }
@@ -53,50 +45,43 @@ function matchingBrace(text, start, open, close) {
   throw new Error(`未闭合的 ${open}${close}`);
 }
 
-const arrayEnd = matchingBrace(source, arrayStart, '[', ']');
+const arrayEnd = matchingBrace(source, arrayStart, "[", "]");
 const objects = [];
-for (let i = arrayStart + 1; i < arrayEnd;) {
-  if (source[i] !== '{') {
+for (let i = arrayStart + 1; i < arrayEnd; ) {
+  if (source[i] !== "{") {
     i += 1;
     continue;
   }
-  const end = matchingBrace(source, i, '{', '}') + 1;
+  const end = matchingBrace(source, i, "{", "}") + 1;
   const raw = source.slice(i, end);
+  let value;
   try {
-    objects.push({ start: i, end, value: JSON.parse(raw) });
+    value = JSON.parse(raw);
   } catch {
     throw new Error(`sites 中存在无法解析的对象，位置 ${i}`);
   }
+  objects.push({ start: i, end, raw, value });
   i = end;
 }
 
-const existing = objects.filter((item) => item.value.key === '爱动漫');
-const desired = site;
-if (existing.length === 1 && JSON.stringify(existing[0].value) === JSON.stringify(desired)) {
-  if (data.sites.filter((item) => item.key === '爱动漫').length !== 1) {
-    throw new Error('爱动漫入口数量不正确');
-  }
-  process.exit(0);
+const siteValues = Array.isArray(data.sites) ? data.sites : [];
+if (objects.length !== siteValues.length) {
+  throw new Error("sites 数组解析数量不一致");
 }
 
-let next = source;
-if (existing.length > 1) throw new Error('爱动漫入口数量不正确');
-if (existing.length === 1) {
-  const item = existing[0];
-  const lineStart = source.lastIndexOf('\n', item.start) + 1;
-  const indent = source.slice(lineStart, item.start).match(/^\s*/)[0];
-  const replacement = JSON.stringify(desired, null, 2).split('\n').map((line, i) => i ? indent + line : line).join('\n');
-  next = source.slice(0, item.start) + replacement + source.slice(item.end);
-} else {
-  const anchor = objects.find((item) => item.value.key === 'Anime1') || objects.at(-1);
-  const lineStart = source.lastIndexOf('\n', anchor.start) + 1;
-  const indent = source.slice(lineStart, anchor.start).match(/^\s*/)[0];
-  const insertion = `${JSON.stringify(desired, null, 2).split('\n').map((line, i) => i ? indent + line : line).join('\n')},\n`;
-  next = source.slice(0, anchor.start) + insertion + source.slice(anchor.start);
+const indent = "    ";
+const rawEntries = [JSON.stringify(site)];
+for (const object of objects) {
+  if (object.value.key !== "爱动漫") rawEntries.push(object.raw);
 }
+const arrayText = "[\n" + rawEntries.map((entry) => indent + entry).join(",\n") + "\n  ]";
 
-const check = JSON.parse(next);
-if (check.sites.filter((item) => item.key === '爱动漫').length !== 1) {
-  throw new Error('爱动漫入口数量不正确');
+let next = source.slice(0, arrayStart) + arrayText + source.slice(arrayEnd + 1);
+const parsed = JSON.parse(next);
+if (parsed.sites.length !== siteValues.length || parsed.sites[0].key !== "爱动漫") {
+  throw new Error("爱动漫入口定位失败");
 }
-fs.writeFileSync(apiPath, next);
+if (next !== source) {
+  fs.writeFileSync(apiPath, next);
+  console.log("已把爱动漫移动到站点列表第一位");
+}

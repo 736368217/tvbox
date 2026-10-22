@@ -1,4 +1,4 @@
-name: Sync upstream branches
+name: Sync xiaosa only
 
 on:
   workflow_dispatch:
@@ -9,37 +9,23 @@ permissions:
   contents: write
 
 concurrency:
-  group: sync-upstream-branches
+  group: sync-xiaosa
   cancel-in-progress: false
 
 jobs:
   sync:
     runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - branch: master
-            variant: master
-          - branch: "123"
-            variant: search
     steps:
-      - name: Checkout target branch
+      - name: Checkout 123
         uses: actions/checkout@v4
         with:
-          ref: ${{ matrix.branch }}
+          ref: "123"
           fetch-depth: 0
 
-      - name: Fetch upstream
-        run: |
-          git remote add upstream https://github.com/qist/tvbox.git
-          git fetch upstream master
-
-      - name: Merge upstream and preserve Aidongman
+      - name: Sync xiaosa and prune
         env:
-          TARGET_BRANCH: ${{ matrix.branch }}
-          AIDONGMAN_VARIANT: ${{ matrix.variant }}
+          TARGET_BRANCH: "123"
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          bash .github/scripts/sync-upstream.sh "$TARGET_BRANCH" "$AIDONGMAN_VARIANT"
+          bash .github/scripts/sync-upstream.sh "$TARGET_BRANCH"
