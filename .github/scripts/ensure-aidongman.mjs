@@ -8,25 +8,24 @@ if (!['master', 'search'].includes(variant) || !branch) {
   throw new Error('Usage: node ensure-aidongman.mjs <master|search> <branch>');
 }
 
-const searchBase = `https://ghfast.top/https://raw.githubusercontent.com/736368217/tvbox/${branch}/xiaosa`;
-const assetVersion = '3';
 const site = variant === 'search'
   ? {
       key: '爱动漫',
       name: '爱动漫 • 动漫',
-      type: 3,
-      api: `${searchBase}/js/aidongman-drpy2.min.js?v=${assetVersion}`,
+      type: 1,
+      api: 'https://m3u8.girigirilove.com/api.php/provide/vod/',
       searchable: 1,
       quickSearch: 1,
-      filterable: 1,
-      ext: `${searchBase}/js/%E7%88%B1%E5%8A%A8%E6%BC%AB.js?v=${assetVersion}`,
+      filterable: 0,
     }
   : {
       key: '爱动漫',
       name: '爱动漫｜动漫',
-      type: 3,
-      api: './js/aidongman-drpy2.min.js',
-      ext: './js/爱动漫.js',
+      type: 1,
+      api: 'https://m3u8.girigirilove.com/api.php/provide/vod/',
+      searchable: 1,
+      quickSearch: 1,
+      filterable: 0,
     };
 
 const source = fs.readFileSync(apiPath, 'utf8');
