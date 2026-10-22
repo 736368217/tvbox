@@ -11,11 +11,12 @@ if (!["master", "search"].includes(variant) || !branch) {
 const site = {
   key: "爱动漫",
   name: "爱动漫 • 动漫",
-  type: 1,
-  api: "https://m3u8.girigirilove.com/api.php/provide/vod/",
+  type: 3,
+  api: "./js/爱动漫.js?v=1",
   searchable: 1,
   quickSearch: 1,
-  filterable: 0,
+  filterable: 1,
+  timeout: 60,
 };
 
 const source = fs.readFileSync(apiPath, "utf8");
