@@ -4,7 +4,7 @@
   "logo": "https://pic7.fukit.cn/autoupload/gE6Y0Af2tjXBCNig6CtNDI12_FRYNb81z6UPhMWD8iI/20251224/dJkT/1080X1080/logo.jpg/webp",
   "danmaku": "http://127.0.0.1:9978/proxy?do=danmaku&name={name}&episode={episode}",
   "sites": [
-    {"key":"爱动漫","name":"爱动漫 • 动漫","type":1,"api":"https://m3u8.girigirilove.com/api.php/provide/vod/","searchable":1,"quickSearch":1,"filterable":0},
+    {"key":"爱动漫","name":"爱动漫 • 动漫","type":3,"api":"./js/爱动漫.js?v=1","searchable":1,"quickSearch":1,"filterable":1,"timeout":60},
     {"key": "豆瓣","name": "豆瓣 • 首页","type": 3,"api": "csp_Douban","searchable": 0},
     {"key": "配置中心","name": "配置 • 中心","type": 3,"api": "csp_Config","searchable": 0,"changeable": 0,"indexs": 0,"style": {"type": "rect","ratio": 1.618}},
     {"key": "本地","name": "本地 • 视频","type": 3,"api": "csp_LocalFile"},
