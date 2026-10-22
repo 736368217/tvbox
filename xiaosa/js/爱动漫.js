@@ -57,7 +57,7 @@ function pic(url) {
 }
 
 
-function rows(data) {
+function rows(data, tid) {
   const list = (data && data.info && data.info.rows) ? data.info.rows : [];
   return list.map(item => ({
     vod_id: String(item.vod_id || ''),
@@ -65,18 +65,18 @@ function rows(data) {
     vod_pic: pic(item.vod_pic),
     vod_remarks: item.vod_remarks || '',
     vod_year: String(item.vod_year || ''),
-    type_name: TYPE_NAMES[String(item.type_id || '')] || ''
+    type_name: TYPE_NAMES[String(item.type_id || '')] || TYPE_NAMES[String(tid || '')] || ''
   }));
 }
 
-function pageResult(data, pg, size) {
+function pageResult(data, pg, size, tid) {
   const total = (data && data.info && data.info.total) ? Number(data.info.total) : 0;
   return {
     page: Number(pg) || 1,
     pagecount: Math.max(1, Math.ceil(total / size)),
     limit: size,
     total: total,
-    list: rows(data)
+    list: rows(data, tid)
   };
 }
 
@@ -111,14 +111,14 @@ export default {
 
   async homeVod() {
     const data = await net.json(this.host + '/api.php/Vod/get_list?type_id=2&offset=0&limit=20');
-    return { list: rows(data) };
+    return { list: rows(data, 2) };
   },
 
   async category(tid, pg, filter, extend) {
     const size = 60;
     const url = this.host + '/api.php/Vod/get_list?' + buildQuery(tid, pg, extend);
     const data = await net.json(url);
-    return pageResult(data, pg, size);
+    return pageResult(data, pg, size, tid);
   },
 
   async detail(id) {
