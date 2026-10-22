@@ -2,21 +2,16 @@
 
 ## 爱动漫
 
-爱动漫固定放在 `xiaosa/api.json` 的 `sites` 列表第一位，使用站点官方 JSON API：
+爱动漫固定放在 `xiaosa/api.json` 的 `sites` 列表第一位，使用站点官方 JSON 接口封装的 JS 源：
 
-- 接口：`https://m3u8.girigirilove.com/api.php/provide/vod/`
-- TVBox 类型：`type: 1`（苹果CMS JSON）
-- 支持：首页推荐、分类（日番 / 美番 / 4K杜比）、搜索、详情、m3u8 / mp4 直接播放
+- 列表接口：`https://m3u8.girigirilove.com/api.php/Vod/get_list`
+- 详情接口：`https://m3u8.girigirilove.com/api.php/Vod/get_detail`
+- TVBox 类型：`type: 3`（JS 源，需要支持 QuickJS 的影视仓/白盒 TVBox）
+- 分类：日番、美番、剧场版、真人番剧、BD副音轨、其他
+- 筛选：类型、季度、年份、语言、版本、原作、排序
+- 支持：首页推荐、分类、筛选、搜索、详情、m3u8 直链播放
 
-站点以后更换域名时，只需把 `xiaosa/api.json` 中爱动漫的 `api` 改成
-`https://新域名/api.php/provide/vod/`，并同步修改
-`.github/scripts/ensure-aidongman.mjs` 里的地址即可。
-
-## 旧版说明（已废弃）
-
-旧版“网页解析 + 搜索验证码 OCR”方案已移除。旧站的
-`/verify/index.html`、`/index.php/ajax/verify_check`、`/search/...`
-现在都返回新版 SPA 页面，`api.nn.ci` OCR 也不可用，旧链路无法继续工作。
+站点以后更换域名时，只需把 `xiaosa/js/爱动漫.js` 顶部的 `HOST` 改成新域名。
 
 ## 文件保留规则
 
@@ -25,6 +20,7 @@
 - `xiaosa/api.json`
 - `xiaosa/README.md`
 - `xiaosa/spider.jar`
+- `xiaosa/js/爱动漫.js`
 - `api.json` 中 `./json/...`、`./py/...` 等相对路径引用的文件
 
-`api.json` 不再引用的 `js/`、`XBPQ/`、`XYQHiker/`、`ITV.txt` 等文件会在同步时清理。
+`api.json` 不再引用的其他文件会在同步时清理。
