@@ -55,7 +55,7 @@ function pruneDirectory(dir, prefix = "") {
 
 pruneDirectory(xiaosaDir);
 
-const keepTop = new Set([".git", ".github", ".gitignore", "README.md", "xiaosa"]);
+const keepTop = new Set([".git", ".github", ".gitignore", "README.md", "tools", "xiaosa"]);
 for (const entry of fs.readdirSync(root, { withFileTypes: true })) {
   if (keepTop.has(entry.name)) continue;
   fs.rmSync(path.join(root, entry.name), { recursive: true, force: true });
