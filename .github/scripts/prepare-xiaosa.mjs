@@ -6,7 +6,7 @@ const xiaosaDir = path.join(root, "xiaosa");
 const apiPath = path.join(xiaosaDir, "api.json");
 const data = JSON.parse(fs.readFileSync(apiPath, "utf8"));
 
-const keep = new Set(["api.json", "README.md"]);
+const keep = new Set(["api.json", "README.md", "spider.jar"]);
 
 function addReference(value) {
   if (typeof value !== "string") return;
