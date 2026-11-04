@@ -50,10 +50,24 @@ function filterMap() {
   return out;
 }
 
+// 详情页 API 返回的 vod_pic 是相对路径 "upload/vod/..."，
+// 图片实际存放在 jpg.girigirilove.com；挂在 API 域名 m3u8.girigirilove.com
+// 下一律 404，会让所有客户端写进历史的封面都是坏地址。
+// 列表 API 已经返回 https://jpg.girigirilove.com/... 的完整 URL，原样保留。
+const IMG_HOST = 'https://jpg.girigirilove.com';
+
 function pic(url) {
-  url = String(url || '');
+  url = String(url || '').trim();
   if (!url) return '';
-  return /^https?:/i.test(url) ? url : HOST + (url[0] === '/' ? url : '/' + url);
+  if (/^https?:\/\/jpg\.girigirilove\.com\//i.test(url)) return url;
+  // 兼容站方以后把图片域名换成别的 CDN：非已知坏域名的完整 URL 原样保留。
+  if (/^https?:/i.test(url)) {
+    return url.replace(/^https?:\/\/(?:m3u8\.)?girigirilove\.com\//i, IMG_HOST + '/');
+  }
+  const path = url.replace(/^\/+/, '');
+  // "upload/vod/..." 是站方图片路径；其余相对路径仍按旧逻辑回退到 API 域名，避免误伤。
+  return /^(?:upload\/vod\/|vod\/)/i.test(path) ? IMG_HOST + '/' + path
+        : HOST + '/' + path;
 }
 
 
