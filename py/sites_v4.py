@@ -17,7 +17,7 @@ class Spider:
     JABLE_HOST = "https://jable.tv"
     JINA_READER = "https://r.jina.ai/"
     MISSAV_HOSTS = ("https://missav.ws", "https://missav.ai")
-    HANIME_HOSTS = ("https://hanimeone.me", "https://hanime1.me", "https://hanime1.best")
+    HANIME_HOSTS = ("https://hanime1.com", "https://hanime1.me", "https://hanimeone.me", "https://hanime1.best")
 
     def init(self, extend=""):
         try:
@@ -28,6 +28,7 @@ class Spider:
         self.hanime_host = self.HANIME_HOSTS[0]
         self.missav_host = self.MISSAV_HOSTS[0]
         self.missav_routes = {}
+        self.av_media_map = {}
         self.session = requests.Session()
 
     def getName(self):
@@ -478,7 +479,10 @@ class Spider:
 
     def _select_hanime_host(self):
         for host in self.HANIME_HOSTS:
-            content = self._get(host + "/search?sort=%s&page=1" % quote("最新上市"), host + "/")
+            query = "/search?sort=%s&page=1" % quote("最新上市")
+            content = self._get(host + query, host + "/")
+            if not self._parse_hanime(content):
+                content = self._get_reader(host + query)
             if self._parse_hanime(content):
                 self.hanime_host = host
                 return content
@@ -611,6 +615,9 @@ class Spider:
                     self.hanime_host, quote(tid), quote(sort), page)
             content = self._get(url, self.hanime_host + "/")
             items = self._parse_hanime(content)
+            if not items:
+                content = self._get_reader(url)
+                items = self._parse_hanime(content)
             return {"list": items, "page": page, "pagecount": self._page_count(content, page), "limit": 40}
         if self.mode == "123av":
             url = self._av_url(tid, page, extend)
@@ -699,6 +706,8 @@ class Spider:
                 media_url = ""
             media_referer = iframe_url
         variants = self._media_variants(media_url, media_referer)
+        if not variants:
+            variants = self._av_embedded_sources(content)
         play_url = "#".join("%s$%s" % item for item in variants)
         if not play_url:
             play_url = "网页播放$" + url
@@ -709,6 +718,65 @@ class Spider:
             "vod_play_from": source_name,
             "vod_play_url": play_url,
         }]}
+
+    def _av_embedded_sources(self, content):
+        # 2026-11: 123av renders episodes from an Alpine.js player payload and
+        # resolves the real stream through <player-host>/stream?id=<hash>.
+        match = re.search(r"x-data=\"player\(JSON\.parse\('([\s\S]*?)'\)", content, re.I)
+        if not match:
+            return []
+        payload = re.sub(r"\\+u0022", '"', match.group(1))
+        payload = re.sub(r"\\+/", "/", payload)
+        try:
+            episodes = json.loads(payload)
+        except Exception:
+            return []
+        if not isinstance(episodes, list):
+            return []
+        result = []
+        for index, episode in enumerate(episodes[:4]):
+            if not isinstance(episode, dict):
+                continue
+            resolved = self._resolve_player_url(str(episode.get("url", "")))
+            if not resolved:
+                continue
+            origin, media = resolved
+            referer = origin + "/"
+            self.av_media_map[media] = referer
+            variants = self._media_variants(media, referer)
+            name = str(episode.get("name") or episode.get("number") or (index + 1))
+            if variants:
+                quality, stream = variants[0]
+                self.av_media_map[stream] = referer
+                result.append(("第%s集 %s" % (name, quality), stream))
+            else:
+                result.append(("第%s集" % name, media))
+        return result
+
+    def _resolve_player_url(self, player_url):
+        match = re.match(r"https?://([^/]+)/e/([A-Za-z0-9_-]+)", player_url or "", re.I)
+        if not match:
+            return None
+        host, hashed = match.group(1), match.group(2)
+        payload = self._get("https://%s/stream?id=%s" % (host, hashed), "https://%s/" % host)
+        try:
+            data = json.loads(payload)
+        except Exception:
+            return None
+        media = ((data.get("media") or {}).get("stream") or "").strip()
+        if not media.startswith("http"):
+            return None
+        return "https://%s" % host, media
+
+    def _av_referer(self, media_url):
+        if media_url in self.av_media_map:
+            return self.av_media_map[media_url]
+        for candidate in ("https://123av.com/", "https://javplayer.cc/"):
+            probe = self._get(media_url, candidate)
+            if probe.lstrip().startswith("#EXTM3U"):
+                self.av_media_map[media_url] = candidate
+                return candidate
+        return "https://123av.com/"
 
     def _direct_detail(self, path):
         if self.mode == "jable":
@@ -755,6 +823,8 @@ class Spider:
             for host in hosts:
                 url = "%s/watch?v=%s" % (host, vid)
                 candidate = self._get(url, host + "/")
+                if not re.search(r"<source[^>]+>", candidate, re.I):
+                    candidate = self._get_reader(url)
                 candidate_sources = []
                 for tag in re.findall(r'<source[^>]+>', candidate, re.I):
                     src = self._attr(tag, "src")
@@ -794,6 +864,9 @@ class Spider:
             url = "%s/search?query=%s&page=%d" % (self.hanime_host, quote(key), page)
             content = self._get(url, self.hanime_host + "/")
             items = self._parse_hanime(content)
+            if not items:
+                content = self._get_reader(url)
+                items = self._parse_hanime(content)
         elif self.mode == "jable":
             url = "%s/search/%s/?from=%d" % (self.JABLE_HOST, quote(key, safe=""), page)
             content = self._get_jable(url)
@@ -815,7 +888,7 @@ class Spider:
         if vod_id.startswith("http") and not re.search(r"\.(?:m3u8|mp4)(?:[?#]|$)", vod_id, re.I):
             return {"parse": 1, "jx": 0, "url": vod_id}
         if flag == "123AV":
-            referer = "https://javplayer.cc/"
+            referer = self._av_referer(vod_id)
         elif self.mode == "hanime":
             referer = self.hanime_host + "/"
         elif self.mode == "jable":

@@ -27,11 +27,11 @@ real media playlist.
   sensitive: the spider tries the official site, then a MacCMS mirror, then a
   text-reader service. A working network node is usually enough.
 
-## Source status (checked 2026-10-22)
+## Source status (checked 2026-11-20)
 
 | Source | Category | Search | Detail/play |
 | :--- | :--- | :--- | :--- |
-| Hanime | OK | OK | OK (direct media) |
+| Hanime | OK via hanime1.com mirror | OK | OK (direct media) |
 | 123AV | OK when the egress is not rate-limited | OK | OK / parser fallback |
 | KanAV | OK (24/page) | OK | OK (signed m3u8) |
 | 18AV | OK (24/page) | OK | OK (multi-quality) |
@@ -46,7 +46,7 @@ Whenever a `py/*.py` file changes, bump the `?v=` query on its `api` URL in
 For clients in mainland China import the proxied form (no VPN needed to fetch
 the config):
 
-`https://ghfast.top/https://raw.githubusercontent.com/736368217/tvbox/456/api.json`
+`https://gh-proxy.com/https://raw.githubusercontent.com/736368217/tvbox/456/api.json`
 
 The direct `raw.githubusercontent.com` form only works where GitHub raw is
 reachable; the spider files themselves are already requested through the same
