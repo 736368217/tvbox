@@ -43,11 +43,15 @@ Whenever a `py/*.py` file changes, bump the `?v=` query on its `api` URL in
 
 ## Import URL
 
-For clients in mainland China import the proxied form (no VPN needed to fetch
-the config):
+Spider paths in `api.json` are relative (`./py/...`), so a client resolves them
+against the URL it imported the config from. Direct import and any GitHub
+accelerator both work, with no proxy address baked into the config:
 
-`https://gh-proxy.com/https://raw.githubusercontent.com/736368217/tvbox/456/api.json`
+```text
+https://raw.githubusercontent.com/736368217/tvbox/456/api.json
+https://gh-proxy.com/https://raw.githubusercontent.com/736368217/tvbox/456/api.json
+https://cdn.jsdelivr.net/gh/736368217/tvbox@456/api.json
+```
 
-The direct `raw.githubusercontent.com` form only works where GitHub raw is
-reachable; the spider files themselves are already requested through the same
-proxy.
+This relies on the client rewriting relative config paths against the config
+URL (`fixContentPath` in ApiConfig), which current python builds do.
