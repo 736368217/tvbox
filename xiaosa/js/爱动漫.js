@@ -124,8 +124,68 @@ export default {
   },
 
   async homeVod() {
-    const data = await net.json(this.host + '/api.php/Vod/get_list?type_id=2&offset=0&limit=20');
-    return { list: rows(data, 2) };
+    const paths = [
+      '/api.php/App2/bannerList',
+      '/api.php/App2/weekList',
+      '/api.php/Vod/get_list?type_id=2&offset=0&limit=12',
+      '/api.php/Vod/get_list?type_id=21&offset=0&limit=12',
+      '/api.php/App2/likeList'
+    ];
+    // 各分区独立容错，单个接口失败不清空整个首页。
+    const data = await Promise.all(paths.map(async path => {
+      try {
+        return await net.json(this.host + path);
+      } catch (error) {
+        return null;
+      }
+    }));
+    const infoList = value => value && Array.isArray(value.info) ? value.info : [];
+    const videos = (items, tid) => rows({ info: { rows: (Array.isArray(items) ? items : [])
+      .filter(item => item && /^[1-9]\d*$/.test(String(item.vod_id || '')))
+      .map(item => Object.assign({}, item, {
+        vod_remarks: item.vod_remarks || (typeof item.vod_time === 'string' ? item.vod_time : '')
+      })) } }, tid);
+    const week = infoList(data[1]);
+    const calendar = [];
+    for (const day of week) {
+      if (day && Array.isArray(day.video)) calendar.push(...day.video);
+    }
+    const today = new Date().getDay() || 7;
+    const schedule = week.find(day => day && Number(day.week) === today);
+    const daily = videos(schedule && schedule.video, 2);
+    const japan = videos(data[2] && data[2].info && data[2].info.rows, 2);
+    const movies = videos(data[3] && data[3].info && data[3].info.rows, 21);
+    const recommended = videos(infoList(data[4]));
+    const catalog = japan.concat(movies, videos(calendar, 2), recommended);
+    const featured = [];
+    for (const banner of infoList(data[0])) {
+      if (!banner) continue;
+      const key = String(banner.video_key || '');
+      const match = String(banner.link || '').match(/^\/(?:video|detail)\/([1-9]\d*)(?:[/?#]|$)/);
+      const id = /^[1-9]\d*$/.test(key) ? key : (match ? match[1] : '');
+      if (!id) continue; // 轮播 ID 不是番剧 ID，外部广告链接不能作为影片。
+      const cover = String(banner.cover || '');
+      const known = catalog.find(item => item.vod_id === id);
+      featured.push(Object.assign({
+        vod_id: id,
+        vod_name: banner.title || '',
+        // 横幅在 API 域名下，不能套用 upload/vod 封面的 CDN 替换。
+        vod_pic: /^https?:\/\//i.test(cover) ? cover : (cover ? this.host + '/' + cover.replace(/^\/+/, '') : ''),
+        vod_remarks: ''
+      }, known || {}));
+    }
+    const list = [];
+    const seen = new Set();
+    // 与官网一致：精选、今日追番、日番、剧场版、为你推荐。
+    for (const item of featured.concat(daily, japan, movies, recommended)) {
+      if (!item.vod_name || seen.has(item.vod_id)) continue;
+      seen.add(item.vod_id);
+      list.push(item);
+    }
+    if (list.length) return { list };
+    // 所有首页分区都不可用时，保留原日番列表作为最后回退。
+    const fallback = await net.json(this.host + '/api.php/Vod/get_list?type_id=2&offset=0&limit=20');
+    return { list: rows(fallback, 2) };
   },
 
   async category(tid, pg, filter, extend) {
